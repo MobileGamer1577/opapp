@@ -1,0 +1,57 @@
+# ─── Flutter / Dart ─────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+build/
+.pub-cache/
+.pub/
+
+# ─── Android ────────────────────────────────────────────────
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
+**/android/app/debug.keystore
+**/android/key.properties
+
+# ─── iOS ────────────────────────────────────────────────────
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Pods/
+
+# ─── macOS ──────────────────────────────────────────────────
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# ─── VS Code ────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+
+# ─── IDE / System ───────────────────────────────────────────
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ─── Backups (Build-Script) ──────────────────────────────────
+_backups/
+
+# ─── Secrets / Keys (NIEMALS committen!) ────────────────────
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist

@@ -1,0 +1,42 @@
+name: opapp
+description: OPAPP – Companion App für OPSUCHT.NET Citybuild Server
+publish_to: 'none'
+
+version: 1.0.0-beta+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ─── State Management ───────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+
+  # ─── Navigation ─────────────────────────────────────────────
+  go_router: ^14.2.0
+
+  # ─── HTTP / Netzwerk ────────────────────────────────────────
+  http: ^1.2.1
+
+  # ─── Lokaler Speicher (Theme-Präferenz etc.) ─────────────────
+  shared_preferences: ^2.3.1
+
+  # ─── URL Launcher (Website-Links) ───────────────────────────
+  url_launcher: ^6.3.0
+
+  # ─── Icons ──────────────────────────────────────────────────
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/data/
