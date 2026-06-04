@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../data/repositories/shard_repository.dart';
 import '../../../data/repositories/auction_repository.dart';
@@ -11,9 +12,9 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme      = Theme.of(context);
+    final theme = Theme.of(context);
     final shardAsync = ref.watch(shardRateProvider);
-    final auctAsync  = ref.watch(auctionsProvider);
+    final auctAsync = ref.watch(auctionsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,7 +30,6 @@ class DashboardScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
           // ─── Begrüßung ──────────────────────────────────
           Text(
             'Dashboard',
@@ -63,20 +63,22 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           auctAsync.when(
             data: (items) {
-              if (items.isEmpty) return const _EmptyCard(text: 'Keine Auktionen');
+              if (items.isEmpty)
+                return const _EmptyCard(text: 'Keine Auktionen');
               return Column(
                 children: items
                     .take(3)
                     .map((item) => _PreviewTile(
-                          title:    item.itemName,
-                          subtitle: '${item.currentBid.toStringAsFixed(0)} Coins',
-                          icon:     Icons.gavel,
+                          title: item.itemName,
+                          subtitle:
+                              '${item.currentBid.toStringAsFixed(0)} Coins',
+                          icon: Icons.gavel,
                         ))
                     .toList(),
               );
             },
             loading: () => const _LoadingCard(height: 140),
-            error:   (e, _) => _ErrorCard(message: e.toString()),
+            error: (e, _) => _ErrorCard(message: e.toString()),
           ),
           const SizedBox(height: 20),
 
@@ -87,13 +89,13 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               _QuickLink(
                 label: 'Markt',
-                icon:  Icons.storefront_outlined,
+                icon: Icons.storefront_outlined,
                 onTap: () => context.go(AppRoutes.market),
               ),
               const SizedBox(width: 12),
               _QuickLink(
                 label: 'Hilfe',
-                icon:  Icons.help_outline,
+                icon: Icons.help_outline,
                 onTap: () => context.go(AppRoutes.help),
               ),
             ],
@@ -147,7 +149,8 @@ class _ShardRateCard extends StatelessWidget {
 class _PreviewTile extends StatelessWidget {
   final String title, subtitle;
   final IconData icon;
-  const _PreviewTile({required this.title, required this.subtitle, required this.icon});
+  const _PreviewTile(
+      {required this.title, required this.subtitle, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -157,11 +160,11 @@ class _PreviewTile extends StatelessWidget {
       child: Card(
         child: ListTile(
           leading: Icon(icon, color: AppColors.accent, size: 20),
-          title:   Text(title, style: theme.textTheme.bodyLarge),
+          title: Text(title, style: theme.textTheme.bodyLarge),
           trailing: Text(
             subtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color:      AppColors.accent,
+              color: AppColors.accent,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -175,14 +178,15 @@ class _QuickLink extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  const _QuickLink({required this.label, required this.icon, required this.onTap});
+  const _QuickLink(
+      {required this.label, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Card(
         child: InkWell(
-          onTap:        onTap,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -227,7 +231,8 @@ class _ErrorCard extends StatelessWidget {
             const Icon(Icons.error_outline, color: AppColors.error, size: 18),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+              child:
+                  Text(message, style: Theme.of(context).textTheme.bodySmall),
             ),
           ],
         ),
