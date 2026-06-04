@@ -1,76 +1,125 @@
 # OPAPP – Companion App für OPSUCHT.NET
 
-Eine moderne, professionelle Flutter-App für den OPSUCHT.NET Minecraft Citybuild Server.
+Eine moderne Flutter Companion-App für den **OPSUCHT.NET** Minecraft Citybuild Server.
 
-## Features
+---
 
-- **Dashboard** – Markt, Auktionen & OPShard-Kurs auf einen Blick
-- **Markt** – Alle Items mit Kauf-/Verkaufspreisen & Kategorien
-- **Auktionshaus** – Live-Auktionen mit 30-Sekunden-Refresh, Enchants & Lore
-- **OPShards** – Aktueller Wechselkurs des Händlers
-- **Hilfe** – Commands, Regelwerk, Restriktionen & globale Suche
+## 📱 Download
 
-## Tech Stack
+> Alle Releases findest du im **[Releases-Bereich](../../releases)** dieses Repositories.
 
-| Bereich           | Technologie           |
-|-------------------|-----------------------|
-| Framework         | Flutter               |
-| State Management  | Riverpod              |
-| Navigation        | GoRouter              |
-| HTTP              | http                  |
-| Theming           | Custom ThemeSystem    |
-| Persistenz        | SharedPreferences     |
+### 🤖 Android (APK)
 
-## Erste Schritte
+1. Gehe zu **[Releases](../../releases)** und öffne die neueste Version
+2. Lade die Datei **`opapp-release_VERSION.apk`** herunter
+3. Auf dem Gerät öffnen → bei Bedarf *Unbekannte Quellen* in den Einstellungen erlauben
+4. Installieren – fertig
+
+### 🍎 iOS (iPhone / iPad)
+
+1. Gehe zu **[Releases](../../releases)** und öffne die neueste Version
+2. Lade die Datei **`opapp_VERSION.ipa`** herunter
+3. Installiere [AltStore](https://altstore.io) auf deinem iPhone (kein Jailbreak nötig)
+4. Öffne die IPA-Datei in AltStore und installiere sie
+
+> **Hinweis:** Die iOS-Version ist nicht im App Store verfügbar und wird per Sideloading installiert.
+> AltStore ist kostenlos und erfordert keinen Jailbreak.
+
+---
+
+## ✨ Features
+
+| Bereich | Beschreibung |
+|---------|--------------|
+| 🏠 **Dashboard** | Schnellübersicht – Kurs, Auktionen, Navigation |
+| 🏪 **Markt** | Alle Items mit Kauf-/Verkaufspreisen & Kategoriefilter |
+| 🔨 **Auktionshaus** | Live-Auktionen, alle 30 Sek. aktualisiert, Enchants & Lore |
+| 💎 **OPShards** | Aktueller Wechselkurs des Händlers |
+| ❓ **Hilfe** | Commands, Regelwerk, Restriktionen & globale Suche |
+
+---
+
+## 🛠 Tech Stack
+
+| Bereich | Technologie |
+|---------|-------------|
+| Framework | Flutter |
+| State Management | Riverpod |
+| Navigation | GoRouter |
+| HTTP | http |
+| Theme | Custom Dark/Light System |
+| Persistenz | SharedPreferences |
+
+---
+
+## 👨‍💻 Für Entwickler
+
+### Voraussetzungen
+
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) (stable channel)
+- Android Studio oder VS Code mit Flutter Extension
+- Für iOS-Builds: macOS mit Xcode (wird automatisch via GitHub Actions gebaut)
+
+### Projekt lokal starten
 
 ```bash
-# 1. Repository klonen
-git clone https://github.com/DEIN-USER/opapp.git
-cd opapp
-
-# 2. Dependencies installieren
 flutter pub get
-
-# 3. App starten
 flutter run
 ```
 
-## Build
+### Build-Script (Windows)
+
+Das enthaltene PowerShell-Script `build_opapp.ps1` übernimmt den gesamten Build-Workflow:
 
 ```powershell
-# APK bauen + Backup erstellen (Windows)
+# Normaler Build
 .\build_opapp.ps1
 
-# Alle Backups löschen
+# Alle lokalen Backups löschen
 .\build_opapp.ps1 -Clear
 ```
 
-## Projektstruktur
+Das Script:
+- Fragt nach Versions-Bump (Patch / Minor / Major)
+- Baut die Android APK
+- Erstellt lokales Backup + ZIP
+- Pusht optional einen Git-Tag → GitHub Actions baut dann automatisch iOS IPA + erstellt den Release
+
+### Automatische Builds (GitHub Actions)
+
+Bei jedem Tag-Push (`v*.*.*`) wird automatisch:
+- 🤖 Android APK auf Ubuntu gebaut
+- 🍎 iOS IPA auf macOS gebaut
+- 📢 GitHub Release mit beiden Dateien erstellt
+
+### Projektstruktur
 
 ```
 lib/
 ├── core/
-│   ├── constants/   # API-URLs, Konstanten
-│   ├── routing/     # GoRouter Navigation
-│   └── theme/       # Dark/Light Theme System
+│   ├── constants/     API-URLs, Timeouts
+│   ├── routing/       GoRouter Navigation
+│   └── theme/         Dark/Light Theme System
 ├── data/
-│   ├── models/      # Datenmodelle
-│   ├── repositories/# Daten-Provider (Riverpod)
-│   └── services/    # API-Service
+│   ├── models/        Datenmodelle (Markt, Auktionen, Shards)
+│   ├── repositories/  Riverpod Provider & Datenabruf
+│   └── services/      HTTP API-Service
 ├── features/
-│   ├── dashboard/   # Dashboard Screen
-│   ├── market/      # Markt Screen
-│   ├── auctions/    # Auktionshaus Screen
-│   ├── shards/      # OPShards Screen
-│   └── help/        # Hilfe Screen + Commands
+│   ├── dashboard/     Dashboard Screen
+│   ├── market/        Markt Screen
+│   ├── auctions/      Auktionshaus Screen
+│   ├── shards/        OPShards Screen
+│   └── help/          Hilfe, Commands, Regelwerk
 └── shared/
-    └── widgets/     # Wiederverwendbare Widgets
+    └── widgets/       Wiederverwendbare Widgets
 ```
 
-## Lizenz
+---
+
+## 📄 Lizenz
 
 MIT License – siehe [LICENSE](LICENSE)
 
 ---
 
-> **Hinweis:** Dieses Projekt ist ein Community-Projekt und steht in keiner offiziellen Verbindung mit OPSUCHT.NET.
+> Dieses Projekt ist ein Community-Projekt und steht in keiner offiziellen Verbindung mit OPSUCHT.NET.
