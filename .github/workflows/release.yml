@@ -1,80 +1,26 @@
 # ============================================================
-#  OPAPP – GitHub Actions Release Pipeline
+#  OPAPP – GitHub Actions: iOS IPA bauen
 #
-#  Wird automatisch gestartet wenn ein Tag "v*" gepusht wird.
-#  Das build_opapp.ps1 Script macht das automatisch am Ende.
+#  Wird MANUELL gestartet:
+#    GitHub → Actions → "Build iOS IPA" → Run workflow
 #
-#  Was passiert:
-#    1. Android APK wird auf Ubuntu gebaut
-#    2. iOS IPA wird auf macOS gebaut (kein Apple-Account noetig)
-#    3. GitHub Release wird mit APK + IPA erstellt
-#    4. Release Notes werden aus den Commits generiert
-#
-#  iOS-Installation: AltStore (https://altstore.io) – kein Jailbreak
+#  Ergebnis:
+#    → iOS IPA als Artifact zum Herunterladen (7 Tage verfuegbar)
+#    → Danach manuell zum GitHub Release hinzufuegen
 # ============================================================
 
-name: 🚀 Release Build
+name: 🍎 Build iOS IPA
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'          # Startet bei Tags wie v1.0.1, v2.0.0-beta
-
-  workflow_dispatch:       # Manueller Start ueber GitHub UI moeglich
-
-# ─── Berechtigungen fuer Release-Erstellung ──────────────────
-permissions:
-  contents: write
+  workflow_dispatch:    # Nur manuell ueber GitHub UI starten
 
 jobs:
 
   # ════════════════════════════════════════════════════════════
-  #  JOB 1: Android APK
-  # ════════════════════════════════════════════════════════════
-  android:
-    name: 🤖 Android APK
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Code auschecken
-        uses: actions/checkout@v4
-
-      - name: ☕ Java 17 einrichten
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 🐦 Flutter einrichten
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: 📦 Dependencies installieren
-        run: flutter pub get
-
-      - name: 🔨 APK bauen
-        run: flutter build apk --release
-
-      - name: 📋 APK umbenennen
-        run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' 'b' | tr -d ' ')
-          cp build/app/outputs/flutter-apk/app-release.apk opapp-release_${VERSION}.apk
-          echo "APK_NAME=opapp-release_${VERSION}.apk" >> $GITHUB_ENV
-
-      - name: 📤 APK als Artifact speichern
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: opapp-release_*.apk
-          retention-days: 7
-
-  # ════════════════════════════════════════════════════════════
-  #  JOB 2: iOS IPA
+  #  iOS IPA auf macOS bauen
   # ════════════════════════════════════════════════════════════
   ios:
-    name: 🍎 iOS IPA
+    name: 🍎 iOS IPA bauen
     runs-on: macos-latest
 
     steps:
@@ -99,75 +45,17 @@ jobs:
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r ../../../opapp_${VERSION}.ipa Payload
+          zip -r "../../../opapp_${VERSION}.ipa" Payload
           echo "IPA_NAME=opapp_${VERSION}.ipa" >> $GITHUB_ENV
-        working-directory: ${{ github.workspace }}
 
-      - name: 📤 IPA als Artifact speichern
+      - name: 📤 IPA zum Download bereitstellen
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
           path: opapp_*.ipa
           retention-days: 7
 
-  # ════════════════════════════════════════════════════════════
-  #  JOB 3: GitHub Release erstellen
-  # ════════════════════════════════════════════════════════════
-  release:
-    name: 📢 GitHub Release
-    needs: [ android, ios ]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: 📥 Code auschecken (fuer pubspec Version)
-        uses: actions/checkout@v4
-
-      - name: 📥 Android Artifact herunterladen
-        uses: actions/download-artifact@v4
-        with:
-          name: android-apk
-          path: release-files/
-
-      - name: 📥 iOS Artifact herunterladen
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-ipa
-          path: release-files/
-
-      - name: 📋 Dateien anzeigen
-        run: ls -la release-files/
-
-      - name: 🏷️ Version aus pubspec lesen
-        id: version
+      - name: ✅ Fertig
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: 🚀 GitHub Release erstellen
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "OPAPP v${{ steps.version.outputs.version }}"
-          files: release-files/*
-          generate_release_notes: true
-          body: |
-            ## 📥 Download
-
-            | Plattform | Datei | Hinweis |
-            |-----------|-------|---------|
-            | 🤖 **Android** | `opapp-release_*.apk` | Direkt installieren |
-            | 🍎 **iOS** | `opapp_*.ipa` | Via [AltStore](https://altstore.io) installieren |
-
-            ---
-
-            ### Android Installation
-            1. APK-Datei herunterladen
-            2. Auf dem Gerät öffnen
-            3. Falls nötig: *Einstellungen → Sicherheit → Unbekannte Quellen* aktivieren
-
-            ### iOS Installation
-            1. [AltStore](https://altstore.io) auf iPhone installieren (kein Jailbreak)
-            2. IPA-Datei herunterladen
-            3. In AltStore öffnen und installieren
-
-            > ⚠️ Die iOS-Version ist nicht im App Store und muss per Sideloading installiert werden.
+          echo "IPA erfolgreich erstellt: $IPA_NAME"
+          echo "Download: GitHub → Actions → dieser Workflow-Run → Artifacts"

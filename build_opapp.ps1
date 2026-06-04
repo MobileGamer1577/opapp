@@ -13,12 +13,10 @@
 #    6. APK umbenennen + Backup-Ordner erstellen
 #    7. ZIP mit Quellcode packen
 #    8. Alte Backups aufraumen (letzte 10 behalten)
-#    9. [Optional] Git commit + Tag pushen
-#       → GitHub Actions baut dann automatisch iOS IPA
-#       → GitHub Release wird automatisch erstellt
 #
-#  iOS-Build: Laeuft automatisch via GitHub Actions (.github/workflows/release.yml)
-#             wenn ein Tag gepusht wird (z.B. v1.0.1)
+#  Danach manuell auf GitHub:
+#    -> Releases -> Draft a new release -> APK hochladen
+#    -> iOS IPA: GitHub Actions -> "Build iOS IPA" -> Run workflow
 # ============================================================
 
 param(
@@ -45,9 +43,9 @@ function ERR($Text)   { Write-Host "  [ERR]   $Text" -ForegroundColor Red }
 function INFO($Text)  { Write-Host "  [INFO]  $Text" -ForegroundColor White }
 function SKIP($Text)  { Write-Host "  [skip]  $Text" -ForegroundColor DarkGray }
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  Liest die aktuelle Version aus pubspec.yaml
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 function Read-PubspecVersion {
     if (-not (Test-Path $PubspecPath)) {
         Write-Host ""
@@ -158,9 +156,9 @@ Write-Host "  ========================================" -ForegroundColor Cyan
 Write-Host "   OPAPP - Build & Release Script" -ForegroundColor Cyan
 Write-Host "  ========================================" -ForegroundColor Cyan
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  PHASE 0: Version aus pubspec.yaml lesen
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 Write-Host ""
 INFO "Lese aktuelle Version aus pubspec.yaml..."
 
@@ -172,9 +170,9 @@ Write-Host "  Aktuelle Version: " -NoNewline
 Write-Host $CurrentString -ForegroundColor Yellow
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  PHASE 1: Art des Updates waehlen
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 
 $patchEx = "$($v.Major).$($v.Minor).$($v.Patch + 1)"
 $minorEx = "$($v.Major).$($v.Minor + 1).0"
@@ -202,9 +200,9 @@ switch ($updateChoice) {
     3 { <# Nur Build #> }
 }
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  PHASE 2: Pre-Release-Tag waehlen (optional)
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 
 $preChoice = Show-Menu "Pre-Release-Tag?" @(
     "Unveraendert lassen  (aktuell: $(if ($v.Pre -eq '') { 'keiner' } else { $v.Pre }))"
@@ -225,9 +223,9 @@ switch ($preChoice) {
     }
 }
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  Neue Version zusammenbauen + Bestaetigung
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 
 $NewVersionString = Build-VersionString $newV
 
@@ -253,9 +251,9 @@ if ($confirm -ne "j" -and $confirm -ne "J") {
     exit 0
 }
 
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 #  pubspec.yaml aktualisieren
-# ────────────────────────────────────────────────────────────
+# -------------------------------------───────────────────────
 
 Write-Host ""
 INFO "Schreibe neue Version in pubspec.yaml..."
@@ -269,7 +267,7 @@ OK "pubspec.yaml aktualisiert: $NewVersionString"
 Set-Location $ProjectRoot
 
 # ── SCHRITT 1: flutter clean ─────────────────────────────────
-Step "1" "6" "flutter clean"
+Step "1" "5" "flutter clean"
 flutter clean
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
@@ -280,7 +278,7 @@ if ($LASTEXITCODE -ne 0) {
 OK "clean"
 
 # ── SCHRITT 2: flutter pub get ───────────────────────────────
-Step "2" "6" "flutter pub get"
+Step "2" "5" "flutter pub get"
 flutter pub get
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
@@ -290,8 +288,8 @@ if ($LASTEXITCODE -ne 0) {
 OK "pub get"
 
 # ── SCHRITT 3: flutter build apk --release ───────────────────
-Step "3" "6" "flutter build apk --release  (Android)"
-INFO "iOS wird automatisch via GitHub Actions gebaut (nach Git-Push)"
+Step "3" "5" "flutter build apk --release  (Android)"
+INFO "iOS IPA: GitHub Actions -> Run workflow -> 'Build iOS IPA'"
 flutter build apk --release
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
@@ -301,7 +299,7 @@ if ($LASTEXITCODE -ne 0) {
 OK "Build erfolgreich"
 
 # ── SCHRITT 4: Backup erstellen ──────────────────────────────
-Step "4" "6" "Backup erstellen"
+Step "4" "5" "Backup erstellen"
 
 $Timestamp  = Get-Date -Format "yyyy-MM-dd_HH-mm"
 $VersionSafe = $NewVersionString -replace '\+', 'b'
@@ -375,7 +373,7 @@ if ($ApkSource) {
 @"
 OPAPP Backup
 ============
-Projekt   : OPAPP – OPSUCHT.NET Companion App
+Projekt   : OPAPP - OPSUCHT.NET Companion App
 Version   : $NewVersionString
 APK-Name  : $ApkName
 Erstellt  : $Timestamp
@@ -385,7 +383,7 @@ Vorherige Version: $CurrentString
 "@ | Set-Content (Join-Path $Dest "BACKUP_INFO.txt") -Encoding UTF8
 
 # ── SCHRITT 5: ZIP erstellen ─────────────────────────────────
-Step "5" "6" "ZIP erstellen (Quellcode ohne APK)"
+Step "5" "5" "ZIP erstellen (Quellcode ohne APK)"
 
 $ZipTmpDir = Join-Path $BackupBase "_zip_tmp_${Timestamp}"
 New-Item -ItemType Directory -Force -Path $ZipTmpDir | Out-Null
@@ -432,83 +430,24 @@ Write-Host ""
 Write-Host "  ZIP (Quellcode):" -ForegroundColor White
 Write-Host "  $ZipPath" -ForegroundColor Yellow
 Write-Host ""
+Write-Host "  -------------------------------------" -ForegroundColor DarkGray
+Write-Host "  Naechste Schritte:" -ForegroundColor White
+Write-Host ""
+Write-Host "  Android Release:" -ForegroundColor DarkGray
+Write-Host "    1. GitHub -> Releases -> Draft a new release" -ForegroundColor DarkGray
+Write-Host "    2. APK aus dem Backup-Ordner hochladen" -ForegroundColor DarkGray
+Write-Host "    3. Release veroeffentlichen" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  iOS IPA (optional):" -ForegroundColor DarkGray
+Write-Host "    1. GitHub -> Actions -> 'Build iOS IPA'" -ForegroundColor DarkGray
+Write-Host "    2. Run workflow -> IPA als Artifact herunterladen" -ForegroundColor DarkGray
+Write-Host "    3. IPA zum Release hinzufuegen" -ForegroundColor DarkGray
+Write-Host "  -------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
 
-$OpenExplorer = Read-Host "  Ordner im Explorer oeffnen? (j/n)"
+$OpenExplorer = Read-Host "  Backup-Ordner im Explorer oeffnen? (j/n)"
 if ($OpenExplorer -eq "j" -or $OpenExplorer -eq "J") {
     Start-Process explorer.exe $BackupBase
 }
 
-# ── SCHRITT 6: Git Release Tag pushen ────────────────────────
-Step "6" "6" "GitHub Release Tag pushen (optional)"
-
 Write-Host ""
-Write-Host "  Wenn du jetzt einen Tag pushst, passiert automatisch:" -ForegroundColor White
-Write-Host "    → GitHub Actions baut die iOS IPA auf macOS" -ForegroundColor DarkGray
-Write-Host "    → GitHub Release wird mit APK + IPA erstellt" -ForegroundColor DarkGray
-Write-Host "    → Release Notes werden automatisch generiert" -ForegroundColor DarkGray
-Write-Host ""
-
-$PushTag = Read-Host "  Release-Tag 'v$NewVersionString' jetzt pushen? (j/n)"
-
-if ($PushTag -eq "j" -or $PushTag -eq "J") {
-
-    Set-Location $ProjectRoot
-    $TagName = "v$($NewVersionString -replace '\+.*', '')"  # Build-Nummer aus Tag entfernen
-
-    Write-Host ""
-    INFO "Commit + Tag + Push wird vorbereitet..."
-    Write-Host ""
-
-    # Nur geaenderte Dateien stagen (pubspec.yaml wurde vom Script veraendert)
-    git add pubspec.yaml
-    if ($LASTEXITCODE -ne 0) { ERR "git add fehlgeschlagen!"; Write-Host ""; exit 1 }
-
-    # Commit (leer wenn nix offen ausser pubspec)
-    git diff --cached --quiet
-    if ($LASTEXITCODE -ne 0) {
-        git commit -m "release: $NewVersionString"
-        if ($LASTEXITCODE -ne 0) { ERR "git commit fehlgeschlagen!"; Write-Host ""; exit 1 }
-        OK "Commit erstellt: release: $NewVersionString"
-    } else {
-        SKIP "Nichts zu committen (pubspec unveraendert?)"
-    }
-
-    # Tag setzen
-    git tag $TagName
-    if ($LASTEXITCODE -ne 0) {
-        WARN "Tag $TagName existiert bereits oder Fehler – wird uebersprungen."
-    } else {
-        OK "Tag gesetzt: $TagName"
-    }
-
-    # Push commits + tag
-    git push
-    git push origin $TagName
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host ""
-        Write-Host "  ========================================" -ForegroundColor Green
-        Write-Host "   Tag '$TagName' gepusht!" -ForegroundColor Green
-        Write-Host "   GitHub Actions startet jetzt:" -ForegroundColor Green
-        Write-Host "   → Android APK" -ForegroundColor Green
-        Write-Host "   → iOS IPA (auf macOS Runner)" -ForegroundColor Green
-        Write-Host "   → GitHub Release mit beiden Dateien" -ForegroundColor Green
-        Write-Host "  ========================================" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "  Status: https://github.com/DEIN-USER/opapp/actions" -ForegroundColor Cyan
-        Write-Host ""
-    } else {
-        ERR "git push fehlgeschlagen! Manuell pushen:"
-        Write-Host "  git push && git push origin $TagName" -ForegroundColor Yellow
-        Write-Host ""
-    }
-
-} else {
-    Write-Host ""
-    INFO "Kein Push. Manuell pushen wenn bereit:"
-    Write-Host "  git add pubspec.yaml" -ForegroundColor DarkGray
-    Write-Host "  git commit -m `"release: $NewVersionString`"" -ForegroundColor DarkGray
-    Write-Host "  git tag v$($NewVersionString -replace '\+.*', '')" -ForegroundColor DarkGray
-    Write-Host "  git push && git push origin v$($NewVersionString -replace '\+.*', '')" -ForegroundColor DarkGray
-    Write-Host ""
-}
-
