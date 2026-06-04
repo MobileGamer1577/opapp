@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../constants/api_constants.dart';
+import '../../core/constants/api_constants.dart';
 
 /// Typisierte API-Fehlerklassen
 sealed class ApiException implements Exception {
@@ -14,7 +14,8 @@ class NetworkException extends ApiException {
 }
 
 class TimeoutException extends ApiException {
-  const TimeoutException() : super('Server antwortet nicht. Bitte später versuchen.');
+  const TimeoutException()
+      : super('Server antwortet nicht. Bitte später versuchen.');
 }
 
 class ServerException extends ApiException {
@@ -37,10 +38,10 @@ class ApiService {
   /// Wirft eine [ApiException] bei Fehlern.
   Future<dynamic> get(String url) async {
     try {
-      final uri      = Uri.parse(url);
-      final response = await _client
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(ApiConstants.receiveTimeout);
+      final uri = Uri.parse(url);
+      final response = await _client.get(uri, headers: {
+        'Accept': 'application/json'
+      }).timeout(ApiConstants.receiveTimeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
