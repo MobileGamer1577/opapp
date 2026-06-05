@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/auction_item.dart';
-import '../services/api_service.dart';
-import '../../core/constants/api_constants.dart';
+import '../api_service.dart';
+import '../../core/api_constants.dart';
 
 // ─── Provider mit automatischem 30s-Refresh ─────────────────
 final auctionsProvider =

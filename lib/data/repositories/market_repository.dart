@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/market_item.dart';
-import '../services/api_service.dart';
-import '../../core/constants/api_constants.dart';
+import '../api_service.dart';
+import '../../core/api_constants.dart';
 
 // ─── Provider ───────────────────────────────────────────────
 final marketProvider = FutureProvider.autoDispose<List<MarketItem>>((ref) async {

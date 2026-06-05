@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shard_rate.dart';
-import '../services/api_service.dart';
-import '../../core/constants/api_constants.dart';
+import '../api_service.dart';
+import '../../core/api_constants.dart';
 
 final shardRateProvider = FutureProvider.autoDispose<ShardRate>((ref) async {
   final api  = ApiService();
