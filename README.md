@@ -45,4 +45,4 @@ MIT License – siehe [LICENSE](LICENSE)
 
 ---
 
-> Dieses Projekt ist ein Community-Projekt und steht in keiner offiziellen Verbindung mit OPSUCHT.NET.
+> Dieses Projekt ist ein Community-Projekt und steht in keiner offiziellen Verbindung zum OPSUCHT-Server oder dessen Betreibern.
