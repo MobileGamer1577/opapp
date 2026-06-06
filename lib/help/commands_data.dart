@@ -1,11 +1,31 @@
+// ═══════════════════════════════════════════════════════════════
+//  commands_data.dart – Alle Server-Commands
+//
+//  ✅ HIER ÄNDERN: Commands ergänzen, bearbeiten, löschen
+//  ✅ HIER ÄNDERN: Reihenfolge der Commands anpassen
+//  ❌ NICHT ÄNDERN: Import und Variablenname kServerCommands
+//
+//  NEUEN COMMAND HINZUFÜGEN:
+//    ServerCommand(
+//      command:     '/meincommand',
+//      description: 'Was dieser Command macht.',
+//      category:    CommandCategory.economy,
+//      aliases:     ['/mc'],  // optional, weglassen wenn keine
+//    ),
+//
+//  KATEGORIEN: economy, auction, teleport, plot, misc
+//  Die Suche durchsucht automatisch command + description + aliases.
+// ═══════════════════════════════════════════════════════════════
+
 import 'command_model.dart';
 
-/// Alle Server-Commands für OPSUCHT.NET
-/// Hier werden die Commands gepflegt – keine API nötig
+/// Vollständige Liste aller Server-Commands für OPSUCHT.NET.
+/// Diese Liste wird direkt im Hilfe-Screen und in der Suche verwendet.
 const List<ServerCommand> kServerCommands = [
 
   // ══════════════════════════════════════
   //  WIRTSCHAFT & SHOP
+  //  Kategorie: CommandCategory.economy
   // ══════════════════════════════════════
   ServerCommand(
     command:     '/shop',
@@ -38,6 +58,7 @@ const List<ServerCommand> kServerCommands = [
 
   // ══════════════════════════════════════
   //  AUKTIONSHAUS
+  //  Kategorie: CommandCategory.auction
   // ══════════════════════════════════════
   ServerCommand(
     command:     '/ah',
@@ -57,7 +78,8 @@ const List<ServerCommand> kServerCommands = [
   ),
 
   // ══════════════════════════════════════
-  //  SPIELER & TELEPORT
+  //  TELEPORT
+  //  Kategorie: CommandCategory.teleport
   // ══════════════════════════════════════
   ServerCommand(
     command:     '/spawn',
@@ -95,6 +117,7 @@ const List<ServerCommand> kServerCommands = [
 
   // ══════════════════════════════════════
   //  GRUNDSTÜCKE / PLOTS
+  //  Kategorie: CommandCategory.plot
   // ══════════════════════════════════════
   ServerCommand(
     command:     '/plot claim',
@@ -127,6 +150,7 @@ const List<ServerCommand> kServerCommands = [
 
   // ══════════════════════════════════════
   //  SONSTIGES
+  //  Kategorie: CommandCategory.misc
   // ══════════════════════════════════════
   ServerCommand(
     command:     '/msg',
@@ -150,4 +174,7 @@ const List<ServerCommand> kServerCommands = [
     description: 'Zeigt den Discord-Einladungslink an.',
     category:    CommandCategory.misc,
   ),
+
+  // ← Weitere Commands hier ergänzen
+  // Einfach ein neues ServerCommand-Objekt kopieren und anpassen.
 ];
