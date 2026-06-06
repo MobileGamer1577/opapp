@@ -58,3 +58,4 @@ GoogleService-Info.plist
 build_opapp.ps1
 build_starten.bat
 .github/workflows/release.yml
+PROJEKT_DOKU.md
