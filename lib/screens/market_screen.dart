@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
 import '../data/repositories/market_repository.dart';
 import '../data/models/market_item.dart';
+import '../widgets/app_background.dart';
 
 class MarketScreen extends ConsumerStatefulWidget {
   const MarketScreen({super.key});
@@ -27,8 +28,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     final marketAsync = ref.watch(marketProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Markt')),
       body: Column(
         children: [
@@ -241,6 +243,7 @@ class _PriceChip extends StatelessWidget {
           style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 14),
         ),
       ],
+      ),
     );
   }
 }

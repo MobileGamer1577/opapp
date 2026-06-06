@@ -8,20 +8,14 @@ class OpApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
-    final router    = ref.watch(routerProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title:            'OPAPP',
       debugShowCheckedModeBanner: false,
-
-      // ─── Theme ──────────────────────────────────────────────
-      theme:      AppTheme.light,
-      darkTheme:  AppTheme.dark,
-      themeMode:  themeMode,
-
-      // ─── Navigation ─────────────────────────────────────────
-      routerConfig: router,
+      theme:            AppTheme.dark,   // Immer Dark Mode
+      themeMode:        ThemeMode.dark,
+      routerConfig:     router,
     );
   }
 }

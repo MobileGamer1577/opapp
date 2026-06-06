@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
 import '../data/repositories/shard_repository.dart';
+import '../widgets/app_background.dart';
 
 class ShardsScreen extends ConsumerWidget {
   const ShardsScreen({super.key});
@@ -11,8 +12,9 @@ class ShardsScreen extends ConsumerWidget {
     final shardAsync = ref.watch(shardRateProvider);
     final theme      = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('OPShards'),
         actions: [

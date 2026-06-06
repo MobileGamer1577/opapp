@@ -5,6 +5,7 @@ import '../core/app_colors.dart';
 import '../core/api_constants.dart';
 import '../help/commands_data.dart';
 import '../help/command_model.dart';
+import '../widgets/app_background.dart';
 
 class HelpScreen extends ConsumerStatefulWidget {
   const HelpScreen({super.key});
@@ -31,8 +32,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Hilfe & Support')),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -397,6 +399,7 @@ class _CommandTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

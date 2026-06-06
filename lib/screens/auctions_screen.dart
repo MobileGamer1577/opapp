@@ -4,6 +4,7 @@ import '../core/app_colors.dart';
 import '../data/repositories/auction_repository.dart';
 import '../data/models/auction_item.dart';
 import '../core/api_constants.dart';
+import '../widgets/app_background.dart';
 
 class AuctionsScreen extends ConsumerWidget {
   const AuctionsScreen({super.key});
@@ -13,8 +14,9 @@ class AuctionsScreen extends ConsumerWidget {
     final auctAsync = ref.watch(auctionsProvider);
     final theme     = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Auktionshaus'),
         actions: [
@@ -240,6 +242,7 @@ class _EnchantChip extends StatelessWidget {
           color:    Colors.purpleAccent,
           fontSize: 11,
         ),
+      ),
       ),
     );
   }
