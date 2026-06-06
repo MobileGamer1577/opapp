@@ -35,68 +35,69 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Hilfe & Support')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-
-          // ─── Globale Command-Suche ─────────────────────────
-          TextField(
-            controller: _searchCtrl,
-            onChanged:  (v) => setState(() => _query = v),
-            decoration: const InputDecoration(
-              hintText:    'Command suchen … (z.B. shop, plot, tpa)',
-              prefixIcon:  Icon(Icons.search, size: 20),
+        appBar: AppBar(title: const Text('Hilfe & Support')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // ─── Globale Command-Suche ─────────────────────────
+            TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v),
+              decoration: const InputDecoration(
+                hintText: 'Command suchen … (z.B. shop, plot, tpa)',
+                prefixIcon: Icon(Icons.search, size: 20),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // ─── Such-Ergebnisse ───────────────────────────────
-          if (_query.isNotEmpty) ...[
-            Text(
-              '${_filtered.length} Ergebnis${_filtered.length == 1 ? '' : 'se'} für „$_query"',
-              style: theme.textTheme.bodySmall,
+            // ─── Such-Ergebnisse ───────────────────────────────
+            if (_query.isNotEmpty) ...[
+              Text(
+                '${_filtered.length} Ergebnis${_filtered.length == 1 ? '' : 'se'} für „$_query"',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              ..._filtered.map((c) => _CommandTile(command: c)),
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 16),
+            ],
+
+            // ─── Schnellzugriff-Karten ─────────────────────────
+            _HelpCard(
+              icon: Icons.menu_book_outlined,
+              title: 'Regelwerk',
+              description: 'Alle Server-Regeln auf einen Blick.',
+              color: AppColors.info,
+              onTap: () => _openUrl(ApiConstants.rulesUrl),
             ),
             const SizedBox(height: 12),
-            ..._filtered.map((c) => _CommandTile(command: c)),
-            const SizedBox(height: 8),
-            const Divider(),
-            const SizedBox(height: 16),
+            _HelpCard(
+              icon: Icons.terminal_outlined,
+              title: 'Server Commands',
+              description:
+                  '${kServerCommands.length} Commands mit Beschreibung.',
+              color: AppColors.accent,
+              onTap: () => _showAllCommands(context),
+            ),
+            const SizedBox(height: 12),
+            _HelpCard(
+              icon: Icons.block_outlined,
+              title: 'Restriktionen',
+              description: 'Deaktivierte Items & Spielmechaniken.',
+              color: AppColors.warning,
+              onTap: () => _showRestrictions(context),
+            ),
+            const SizedBox(height: 12),
+            _HelpCard(
+              icon: Icons.language_outlined,
+              title: 'Zur OPSUCHT Website',
+              description: 'Offizielle Website, Neuigkeiten & mehr.',
+              color: AppColors.darkTextSecondary,
+              onTap: () => _openUrl(ApiConstants.websiteUrl),
+            ),
           ],
-
-          // ─── Schnellzugriff-Karten ─────────────────────────
-          _HelpCard(
-            icon:        Icons.menu_book_outlined,
-            title:       'Regelwerk',
-            description: 'Alle Server-Regeln auf einen Blick.',
-            color:       AppColors.info,
-            onTap:       () => _openUrl(ApiConstants.rulesUrl),
-          ),
-          const SizedBox(height: 12),
-          _HelpCard(
-            icon:        Icons.terminal_outlined,
-            title:       'Server Commands',
-            description: '${kServerCommands.length} Commands mit Beschreibung.',
-            color:       AppColors.accent,
-            onTap:       () => _showAllCommands(context),
-          ),
-          const SizedBox(height: 12),
-          _HelpCard(
-            icon:        Icons.block_outlined,
-            title:       'Restriktionen',
-            description: 'Deaktivierte Items & Spielmechaniken.',
-            color:       AppColors.warning,
-            onTap:       () => _showRestrictions(context),
-          ),
-          const SizedBox(height: 12),
-          _HelpCard(
-            icon:        Icons.language_outlined,
-            title:       'Zur OPSUCHT Website',
-            description: 'Offizielle Website, Neuigkeiten & mehr.',
-            color:       AppColors.darkTextSecondary,
-            onTap:       () => _openUrl(ApiConstants.websiteUrl),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -114,7 +115,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
 
   void _showAllCommands(BuildContext context) {
     showModalBottomSheet(
-      context:       context,
+      context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
@@ -153,15 +154,18 @@ class _CommandsSheet extends StatefulWidget {
 
 class _CommandsSheetState extends State<_CommandsSheet> {
   final _ctrl = TextEditingController();
-  String _q   = '';
+  String _q = '';
   CommandCategory? _cat;
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
+    final theme = Theme.of(context);
     final filtered = kServerCommands.where((c) {
       final matchQ = _q.isEmpty || c.matches(_q);
       final matchC = _cat == null || c.category == _cat;
@@ -172,7 +176,8 @@ class _CommandsSheetState extends State<_CommandsSheet> {
       children: [
         const SizedBox(height: 12),
         Container(
-          width: 36, height: 4,
+          width: 36,
+          height: 4,
           decoration: BoxDecoration(
             color: AppColors.darkBorder,
             borderRadius: BorderRadius.circular(2),
@@ -186,8 +191,9 @@ class _CommandsSheetState extends State<_CommandsSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
             controller: _ctrl,
-            onChanged:  (v) => setState(() => _q = v),
-            decoration: const InputDecoration(hintText: 'Suchen …', prefixIcon: Icon(Icons.search, size: 20)),
+            onChanged: (v) => setState(() => _q = v),
+            decoration: const InputDecoration(
+                hintText: 'Suchen …', prefixIcon: Icon(Icons.search, size: 20)),
           ),
         ),
         const SizedBox(height: 8),
@@ -198,24 +204,28 @@ class _CommandsSheetState extends State<_CommandsSheet> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              FilterChip(label: const Text('Alle'), selected: _cat == null, onSelected: (_) => setState(() => _cat = null)),
+              FilterChip(
+                  label: const Text('Alle'),
+                  selected: _cat == null,
+                  onSelected: (_) => setState(() => _cat = null)),
               ...CommandCategory.values.map((c) => Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: FilterChip(
-                  label:      Text('${c.icon} ${c.label}'),
-                  selected:   _cat == c,
-                  onSelected: (_) => setState(() => _cat = _cat == c ? null : c),
-                ),
-              )),
+                    padding: const EdgeInsets.only(left: 8),
+                    child: FilterChip(
+                      label: Text('${c.icon} ${c.label}'),
+                      selected: _cat == c,
+                      onSelected: (_) =>
+                          setState(() => _cat = _cat == c ? null : c),
+                    ),
+                  )),
             ],
           ),
         ),
         const SizedBox(height: 8),
         Expanded(
           child: ListView.builder(
-            controller:  widget.scrollCtrl,
-            padding:     const EdgeInsets.symmetric(horizontal: 16),
-            itemCount:   filtered.length,
+            controller: widget.scrollCtrl,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filtered.length,
             itemBuilder: (_, i) => _CommandTile(command: filtered[i]),
           ),
         ),
@@ -242,15 +252,16 @@ class _RestrictionsSheet extends StatelessWidget {
           const SizedBox(height: 16),
           // Platzhalter – wird mit echten Daten befüllt
           const _RestrictionTile(
-            title:       'TNT & Explosionen',
+            title: 'TNT & Explosionen',
             description: 'Explosionsschaden ist auf dem Server deaktiviert.',
           ),
           const _RestrictionTile(
-            title:       'Bestimmte Farmingmechaniken',
-            description: 'Einige automatisierte Farm-Designs sind eingeschränkt.',
+            title: 'Bestimmte Farmingmechaniken',
+            description:
+                'Einige automatisierte Farm-Designs sind eingeschränkt.',
           ),
           const _RestrictionTile(
-            title:       'PvP-Zonen',
+            title: 'PvP-Zonen',
             description: 'PvP ist nur in dafür vorgesehenen Bereichen erlaubt.',
           ),
           const SizedBox(height: 16),
@@ -314,7 +325,7 @@ class _HelpCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       child: InkWell(
-        onTap:        onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -323,7 +334,7 @@ class _HelpCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color:        color.withOpacity(0.12),
+                  color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 22),
@@ -338,7 +349,8 @@ class _HelpCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: theme.textTheme.bodySmall?.color),
+              Icon(Icons.chevron_right,
+                  color: theme.textTheme.bodySmall?.color),
             ],
           ),
         ),
@@ -367,17 +379,18 @@ class _CommandTile extends StatelessWidget {
                   Text(
                     command.command,
                     style: const TextStyle(
-                      fontFamily:  'monospace',
-                      color:       AppColors.accent,
-                      fontWeight:  FontWeight.w700,
-                      fontSize:    14,
+                      fontFamily: 'monospace',
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color:        AppColors.accent.withOpacity(0.08),
+                      color: AppColors.accent.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -399,7 +412,6 @@ class _CommandTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
       ),
     );
   }
