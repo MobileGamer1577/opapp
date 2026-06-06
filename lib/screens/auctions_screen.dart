@@ -12,91 +12,96 @@ class AuctionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auctAsync = ref.watch(auctionsProvider);
-    final theme     = Theme.of(context);
+    final theme = Theme.of(context);
 
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Auktionshaus'),
-        actions: [
-          // Live-Indikator
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8, height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Live',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.success,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ─── Refresh-Info-Banner ───────────────────────
-          Container(
-            width:   double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-            color: Colors.white.withOpacity(0.04),
-            child: Text(
-              'Aktualisiert alle ${ApiConstants.auctionRefreshInterval.inSeconds} Sekunden automatisch',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.accent,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-
-          // ─── Liste ────────────────────────────────────
-          Expanded(
-            child: auctAsync.when(
-              data: (items) {
-                if (items.isEmpty) {
-                  return const Center(child: Text('Keine aktiven Auktionen'));
-                }
-                return RefreshIndicator(
-                  onRefresh: () => ref.read(auctionsProvider.notifier).refresh(),
-                  child: ListView.separated(
-                    padding:     const EdgeInsets.all(16),
-                    itemCount:   items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _AuctionCard(item: items[i]),
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off, color: AppColors.error, size: 40),
-                    const SizedBox(height: 12),
-                    Text(e.toString(), style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => ref.read(auctionsProvider.notifier).refresh(),
-                      child: const Text('Erneut versuchen'),
+        appBar: AppBar(
+          title: const Text('Auktionshaus'),
+          actions: [
+            // Live-Indikator
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Live',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.success,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // ─── Refresh-Info-Banner ───────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              color: Colors.white.withOpacity(0.04),
+              child: Text(
+                'Aktualisiert alle ${ApiConstants.auctionRefreshInterval.inSeconds} Sekunden automatisch',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.accent,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            // ─── Liste ────────────────────────────────────
+            Expanded(
+              child: auctAsync.when(
+                data: (items) {
+                  if (items.isEmpty) {
+                    return const Center(child: Text('Keine aktiven Auktionen'));
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(auctionsProvider.notifier).refresh(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) => _AuctionCard(item: items[i]),
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off,
+                          color: AppColors.error, size: 40),
+                      const SizedBox(height: 12),
+                      Text(e.toString(), style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.read(auctionsProvider.notifier).refresh(),
+                        child: const Text('Erneut versuchen'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -116,7 +121,7 @@ class _AuctionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
+    final theme = Theme.of(context);
     final timeLeft = _formatDuration(item.timeLeft);
 
     return Card(
@@ -155,9 +160,9 @@ class _AuctionCard extends StatelessWidget {
                     Text(
                       '${item.currentBid.toStringAsFixed(0)} Coins',
                       style: const TextStyle(
-                        color:      AppColors.accent,
+                        color: AppColors.accent,
                         fontWeight: FontWeight.w700,
-                        fontSize:   16,
+                        fontSize: 16,
                       ),
                     ),
                   ],
@@ -171,9 +176,9 @@ class _AuctionCard extends StatelessWidget {
                       Text(
                         '${item.buyNowPrice!.toStringAsFixed(0)} Coins',
                         style: const TextStyle(
-                          color:      AppColors.gold,
+                          color: AppColors.gold,
                           fontWeight: FontWeight.w600,
-                          fontSize:   14,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -188,9 +193,11 @@ class _AuctionCard extends StatelessWidget {
                     Text(
                       timeLeft,
                       style: TextStyle(
-                        color: item.isExpired ? AppColors.error : AppColors.darkTextPrimary,
+                        color: item.isExpired
+                            ? AppColors.error
+                            : AppColors.darkTextPrimary,
                         fontWeight: FontWeight.w600,
-                        fontSize:   13,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -232,17 +239,16 @@ class _EnchantChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color:        Colors.purple.withOpacity(0.15),
+        color: Colors.purple.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
-        border:       Border.all(color: Colors.purple.withOpacity(0.3)),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color:    Colors.purpleAccent,
+          color: Colors.purpleAccent,
           fontSize: 11,
         ),
-      ),
       ),
     );
   }
