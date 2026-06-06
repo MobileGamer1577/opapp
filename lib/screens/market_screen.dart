@@ -13,8 +13,8 @@ class MarketScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketScreenState extends ConsumerState<MarketScreen> {
-  final _searchCtrl  = TextEditingController();
-  String _query      = '';
+  final _searchCtrl = TextEditingController();
+  String _query = '';
   String? _category;
 
   @override
@@ -31,88 +31,88 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Markt')),
-      body: Column(
-        children: [
-          // ─── Suche ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged:  (v) => setState(() => _query = v),
-              decoration: const InputDecoration(
-                hintText:    'Item suchen …',
-                prefixIcon:  Icon(Icons.search, size: 20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // ─── Kategorien ────────────────────────────────────
-          marketAsync.when(
-            data: (items) {
-              final categories = items
-                  .map((i) => i.category)
-                  .toSet()
-                  .toList()
-                ..sort();
-              return _CategoryBar(
-                categories: categories,
-                selected:   _category,
-                onSelect:   (c) => setState(() => _category = c),
-              );
-            },
-            loading: () => const SizedBox(height: 44),
-            error:   (_, __) => const SizedBox.shrink(),
-          ),
-
-          // ─── Liste ────────────────────────────────────────
-          Expanded(
-            child: marketAsync.when(
-              data: (items) {
-                final filtered = items.where((item) {
-                  final matchQ = _query.isEmpty ||
-                      item.name.toLowerCase().contains(_query.toLowerCase());
-                  final matchC = _category == null || item.category == _category;
-                  return matchQ && matchC;
-                }).toList();
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Text('Keine Items gefunden',
-                        style: theme.textTheme.bodyMedium),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () => ref.refresh(marketProvider.future),
-                  child: ListView.separated(
-                    padding:     const EdgeInsets.all(16),
-                    itemCount:   filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _MarketItemCard(item: filtered[i]),
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error:   (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off, color: AppColors.error, size: 40),
-                    const SizedBox(height: 12),
-                    Text(e.toString(), style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(marketProvider),
-                      child: const Text('Erneut versuchen'),
-                    ),
-                  ],
+        appBar: AppBar(title: const Text('Markt')),
+        body: Column(
+          children: [
+            // ─── Suche ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _query = v),
+                decoration: const InputDecoration(
+                  hintText: 'Item suchen …',
+                  prefixIcon: Icon(Icons.search, size: 20),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+
+            // ─── Kategorien ────────────────────────────────────
+            marketAsync.when(
+              data: (items) {
+                final categories = items.map((i) => i.category).toSet().toList()
+                  ..sort();
+                return _CategoryBar(
+                  categories: categories,
+                  selected: _category,
+                  onSelect: (c) => setState(() => _category = c),
+                );
+              },
+              loading: () => const SizedBox(height: 44),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+
+            // ─── Liste ────────────────────────────────────────
+            Expanded(
+              child: marketAsync.when(
+                data: (items) {
+                  final filtered = items.where((item) {
+                    final matchQ = _query.isEmpty ||
+                        item.name.toLowerCase().contains(_query.toLowerCase());
+                    final matchC =
+                        _category == null || item.category == _category;
+                    return matchQ && matchC;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text('Keine Items gefunden',
+                          style: theme.textTheme.bodyMedium),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () => ref.refresh(marketProvider.future),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) => _MarketItemCard(item: filtered[i]),
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off,
+                          color: AppColors.error, size: 40),
+                      const SizedBox(height: 12),
+                      Text(e.toString(), style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(marketProvider),
+                        child: const Text('Erneut versuchen'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -137,21 +137,21 @@ class _CategoryBar extends StatelessWidget {
       height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding:         const EdgeInsets.symmetric(horizontal: 16),
-        itemCount:       categories.length + 1,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categories.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           if (i == 0) {
             return FilterChip(
-              label:    const Text('Alle'),
+              label: const Text('Alle'),
               selected: selected == null,
               onSelected: (_) => onSelect(null),
             );
           }
           final cat = categories[i - 1];
           return FilterChip(
-            label:      Text(cat),
-            selected:   selected == cat,
+            label: Text(cat),
+            selected: selected == cat,
             onSelected: (_) => onSelect(selected == cat ? null : cat),
           );
         },
@@ -181,9 +181,10 @@ class _MarketItemCard extends StatelessWidget {
                   child: Text(item.name, style: theme.textTheme.titleMedium),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color:        AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -230,7 +231,8 @@ class _PriceChip extends StatelessWidget {
   final String label;
   final double price;
   final Color color;
-  const _PriceChip({required this.label, required this.price, required this.color});
+  const _PriceChip(
+      {required this.label, required this.price, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -240,10 +242,10 @@ class _PriceChip extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         Text(
           '${price.toStringAsFixed(2)} ¢',
-          style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 14),
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.w700, fontSize: 14),
         ),
       ],
-      ),
     );
   }
 }
