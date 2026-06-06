@@ -22,38 +22,37 @@ import 'command_model.dart';
 /// Vollständige Liste aller Server-Commands für OPSUCHT.NET.
 /// Diese Liste wird direkt im Hilfe-Screen und in der Suche verwendet.
 const List<ServerCommand> kServerCommands = [
-
   // ══════════════════════════════════════
   //  WIRTSCHAFT & SHOP
   //  Kategorie: CommandCategory.economy
   // ══════════════════════════════════════
   ServerCommand(
-    command:     '/shop',
+    command: '/shop',
     description: 'Öffnet den Server-Shop.',
-    category:    CommandCategory.economy,
-    aliases:     ['/s'],
+    category: CommandCategory.economy,
+    aliases: ['/s'],
   ),
   ServerCommand(
-    command:     '/sell',
+    command: '/sell',
     description: 'Verkauft Items aus der Hand oder dem Inventar.',
-    category:    CommandCategory.economy,
-    aliases:     ['/sellall'],
+    category: CommandCategory.economy,
+    aliases: ['/sellall'],
   ),
   ServerCommand(
-    command:     '/balance',
+    command: '/balance',
     description: 'Zeigt das eigene Guthaben an.',
-    category:    CommandCategory.economy,
-    aliases:     ['/bal', '/money'],
+    category: CommandCategory.economy,
+    aliases: ['/bal', '/money'],
   ),
   ServerCommand(
-    command:     '/pay',
+    command: '/pay',
     description: 'Überweist Geld an einen anderen Spieler.',
-    category:    CommandCategory.economy,
+    category: CommandCategory.economy,
   ),
   ServerCommand(
-    command:     '/baltop',
+    command: '/baltop',
     description: 'Rangliste der reichsten Spieler.',
-    category:    CommandCategory.economy,
+    category: CommandCategory.economy,
   ),
 
   // ══════════════════════════════════════
@@ -61,20 +60,20 @@ const List<ServerCommand> kServerCommands = [
   //  Kategorie: CommandCategory.auction
   // ══════════════════════════════════════
   ServerCommand(
-    command:     '/ah',
+    command: '/ah',
     description: 'Öffnet das Auktionshaus.',
-    category:    CommandCategory.auction,
-    aliases:     ['/auktionshaus'],
+    category: CommandCategory.auction,
+    aliases: ['/auktionshaus'],
   ),
   ServerCommand(
-    command:     '/ah sell',
+    command: '/ah sell',
     description: 'Stellt das Item in der Hand ins Auktionshaus ein.',
-    category:    CommandCategory.auction,
+    category: CommandCategory.auction,
   ),
   ServerCommand(
-    command:     '/ah list',
+    command: '/ah list',
     description: 'Zeigt eigene aktive Auktionen an.',
-    category:    CommandCategory.auction,
+    category: CommandCategory.auction,
   ),
 
   // ══════════════════════════════════════
@@ -82,37 +81,37 @@ const List<ServerCommand> kServerCommands = [
   //  Kategorie: CommandCategory.teleport
   // ══════════════════════════════════════
   ServerCommand(
-    command:     '/spawn',
+    command: '/spawn',
     description: 'Teleportiert zurück zum Spawn.',
-    category:    CommandCategory.teleport,
+    category: CommandCategory.teleport,
   ),
   ServerCommand(
-    command:     '/home',
+    command: '/home',
     description: 'Teleportiert zum gesetzten Zuhause.',
-    category:    CommandCategory.teleport,
-    aliases:     ['/h'],
+    category: CommandCategory.teleport,
+    aliases: ['/h'],
   ),
   ServerCommand(
-    command:     '/sethome',
+    command: '/sethome',
     description: 'Setzt das aktuelle Zuhause.',
-    category:    CommandCategory.teleport,
+    category: CommandCategory.teleport,
   ),
   ServerCommand(
-    command:     '/tpa',
+    command: '/tpa',
     description: 'Sendet eine Teleport-Anfrage an einen Spieler.',
-    category:    CommandCategory.teleport,
+    category: CommandCategory.teleport,
   ),
   ServerCommand(
-    command:     '/tpaccept',
+    command: '/tpaccept',
     description: 'Akzeptiert eine eingehende Teleport-Anfrage.',
-    category:    CommandCategory.teleport,
-    aliases:     ['/tpyes'],
+    category: CommandCategory.teleport,
+    aliases: ['/tpyes'],
   ),
   ServerCommand(
-    command:     '/warp',
+    command: '/warp',
     description: 'Öffnet das Warp-Menü oder teleportiert zu einem Warp-Punkt.',
-    category:    CommandCategory.teleport,
-    aliases:     ['/warps'],
+    category: CommandCategory.teleport,
+    aliases: ['/warps'],
   ),
 
   // ══════════════════════════════════════
@@ -120,32 +119,32 @@ const List<ServerCommand> kServerCommands = [
   //  Kategorie: CommandCategory.plot
   // ══════════════════════════════════════
   ServerCommand(
-    command:     '/plot claim',
+    command: '/plot claim',
     description: 'Beansprucht das aktuelle Plot.',
-    category:    CommandCategory.plot,
-    aliases:     ['/p claim'],
+    category: CommandCategory.plot,
+    aliases: ['/p claim'],
   ),
   ServerCommand(
-    command:     '/plot info',
+    command: '/plot info',
     description: 'Zeigt Informationen zum aktuellen Plot an.',
-    category:    CommandCategory.plot,
-    aliases:     ['/p info'],
+    category: CommandCategory.plot,
+    aliases: ['/p info'],
   ),
   ServerCommand(
-    command:     '/plot trust',
+    command: '/plot trust',
     description: 'Gibt einem Spieler vollen Zugriff auf dein Plot.',
-    category:    CommandCategory.plot,
+    category: CommandCategory.plot,
   ),
   ServerCommand(
-    command:     '/plot add',
+    command: '/plot add',
     description: 'Fügt einen Spieler als Besucher hinzu.',
-    category:    CommandCategory.plot,
+    category: CommandCategory.plot,
   ),
   ServerCommand(
-    command:     '/plot home',
+    command: '/plot home',
     description: 'Teleportiert zum eigenen Plot.',
-    category:    CommandCategory.plot,
-    aliases:     ['/p home'],
+    category: CommandCategory.plot,
+    aliases: ['/p home'],
   ),
 
   // ══════════════════════════════════════
@@ -153,26 +152,25 @@ const List<ServerCommand> kServerCommands = [
   //  Kategorie: CommandCategory.misc
   // ══════════════════════════════════════
   ServerCommand(
-    command:     '/msg',
-    description: 'Sendet eine private Nachricht an einen Spieler.',
-    category:    CommandCategory.misc,
-    aliases:     ['/tell', '/pm'],
+    command: '/2fa',
+    description: 'Aktiviert die Zwei-Faktor-Authentifizierung.',
+    category: CommandCategory.misc,
   ),
   ServerCommand(
-    command:     '/r',
+    command: '/r',
     description: 'Antwortet auf die letzte private Nachricht.',
-    category:    CommandCategory.misc,
-    aliases:     ['/reply'],
+    category: CommandCategory.misc,
+    aliases: ['/reply'],
   ),
   ServerCommand(
-    command:     '/rules',
+    command: '/rules',
     description: 'Zeigt die Server-Regeln an.',
-    category:    CommandCategory.misc,
+    category: CommandCategory.misc,
   ),
   ServerCommand(
-    command:     '/discord',
+    command: '/discord',
     description: 'Zeigt den Discord-Einladungslink an.',
-    category:    CommandCategory.misc,
+    category: CommandCategory.misc,
   ),
 
   // ← Weitere Commands hier ergänzen
