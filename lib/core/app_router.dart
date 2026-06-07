@@ -23,19 +23,18 @@ import '../screens/market_screen.dart';
 import '../screens/auctions_screen.dart';
 import '../screens/shards_screen.dart';
 import '../screens/help_screen.dart';
+import '../screens/commands_screen.dart';
 // ← Neue Screen-Imports hier hinzufügen
 
 // ── Route-Namen als Konstanten ────────────────────────────────
-// Immer diese Konstanten verwenden, nie '/market' direkt im Code.
-// So muss bei einer URL-Änderung nur diese Klasse angepasst werden.
 abstract class AppRoutes {
   static const dashboard = '/';
-  static const market    = '/market';
-  static const auctions  = '/auctions';
-  static const shards    = '/shards';
-  static const help      = '/help';
-  // ← Neue Route hier ergänzen, z.B.:
-  // static const stats = '/stats';
+  static const market = '/market';
+  static const auctions = '/auctions';
+  static const shards = '/shards';
+  static const help = '/help';
+  static const commands = '/commands';
+  // ← Neue Route hier ergänzen
 }
 
 // ── Router Provider ───────────────────────────────────────────
@@ -47,24 +46,28 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.dashboard,
     routes: [
       GoRoute(
-        path:    AppRoutes.dashboard,
+        path: AppRoutes.dashboard,
         builder: (_, __) => const DashboardScreen(),
       ),
       GoRoute(
-        path:    AppRoutes.market,
+        path: AppRoutes.market,
         builder: (_, __) => const MarketScreen(),
       ),
       GoRoute(
-        path:    AppRoutes.auctions,
+        path: AppRoutes.auctions,
         builder: (_, __) => const AuctionsScreen(),
       ),
       GoRoute(
-        path:    AppRoutes.shards,
+        path: AppRoutes.shards,
         builder: (_, __) => const ShardsScreen(),
       ),
       GoRoute(
-        path:    AppRoutes.help,
+        path: AppRoutes.help,
         builder: (_, __) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.commands,
+        builder: (_, __) => const CommandsScreen(),
       ),
       // ← Neue GoRoute hier ergänzen, z.B.:
       // GoRoute(
