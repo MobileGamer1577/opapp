@@ -1,56 +1,81 @@
 // ═══════════════════════════════════════════════════════════════
 //  command_model.dart – Datenstruktur für Server-Commands
 //
-//  ✅ HIER ÄNDERN: Neue Kategorie hinzufügen (CommandCategory)
-//  ✅ HIER ÄNDERN: Suchlogik erweitern (matches Methode)
+//  ✅ HIER ÄNDERN: Neue Kategorie in CommandCategory ergänzen
+//  ✅ HIER ÄNDERN: SubCommand für verwandte Befehle nutzen
 //  ❌ NICHT ÄNDERN: Klassen-Grundstruktur
-//
-//  NEUE KATEGORIE HINZUFÜGEN:
-//    meineKat(label: 'Mein Label', icon: '🔧');
-//  Die Kategorie erscheint automatisch im Filter des Hilfe-Screens.
 // ═══════════════════════════════════════════════════════════════
 
-/// Kategorien für Server-Commands.
-/// Jede Kategorie hat ein Label (Text) und ein Emoji-Icon.
-/// Die Kategorie erscheint im Hilfe-Screen als Filter-Chip.
+/// Kategorien für Commands (erscheint als Filter-Chip im Commands-Screen)
 enum CommandCategory {
-  economy( label: 'Wirtschaft',   icon: '💰'),
-  auction( label: 'Auktionshaus', icon: '🔨'),
-  teleport(label: 'Teleport',     icon: '✈️'),
-  plot(    label: 'Grundstücke',  icon: '🏠'),
-  misc(    label: 'Sonstiges',    icon: '⚙️');
-  // ← Neue Kategorie hier ergänzen:
-  // meine(label: 'Meine Kategorie', icon: '🔧');
+  economy(label: 'Wirtschaft', icon: '💰'),
+  teleport(label: 'Teleport', icon: '✈️'),
+  plot(label: 'Grundstücke', icon: '🏠'),
+  crafting(label: 'Crafting', icon: '⚒️'),
+  rank(label: 'Rang', icon: '⭐'),
+  social(label: 'Community', icon: '👥'),
+  server(label: 'Server', icon: '🖥️'),
+  misc(label: 'Sonstiges', icon: '⚙️');
 
   const CommandCategory({required this.label, required this.icon});
   final String label;
   final String icon;
 }
 
-/// Repräsentiert einen einzelnen Server-Command mit allen Infos.
+/// Verwandter Unter-Befehl (ohne eigene Kategorie, gehört zum Eltern-Command)
+///
+/// BEISPIEL:
+///   subCommands: [
+///     SubCommand(command: '/sethome', description: '...', aliases: ['/home set']),
+///   ]
+class SubCommand {
+  final String command;
+  final String description;
+  final List<String> aliases;
+
+  const SubCommand({
+    required this.command,
+    required this.description,
+    this.aliases = const [],
+  });
+
+  bool matches(String query) {
+    final q = query.toLowerCase();
+    if (command.toLowerCase().contains(q)) return true;
+    if (description.toLowerCase().contains(q)) return true;
+    if (aliases.any((a) => a.toLowerCase().contains(q))) return true;
+    return false;
+  }
+}
+
+/// Haupt-Command mit optionalen verwandten Sub-Commands
 class ServerCommand {
-  final String command;         // Der Command selbst, z.B. '/shop'
-  final String description;     // Was der Command macht
+  final String command;
+  final String description;
   final CommandCategory category;
-  final List<String> aliases;   // Alternative Schreibweisen, z.B. ['/s']
+  final List<String> aliases;
+
+  /// Verwandte Commands – werden beim Aufklappen der Karte angezeigt.
+  /// z.B. /sethome und /delhome gehören zu /home
+  final List<SubCommand> subCommands;
 
   const ServerCommand({
     required this.command,
     required this.description,
     required this.category,
-    this.aliases = const [],    // Standard: leer (keine Aliases)
+    this.aliases = const [],
+    this.subCommands = const [],
   });
 
-  /// Suche: gibt true zurück wenn die Query auf diesen Command passt.
-  /// Wird in help_screen.dart für die Suche verwendet.
-  ///
-  /// ERWEITERN: Weitere Felder hier durchsuchbar machen, z.B.:
-  ///   if (category.label.toLowerCase().contains(q)) return true;
+  bool get hasSubCommands => subCommands.isNotEmpty;
+
+  /// Suche: trifft auf Command selbst UND alle Sub-Commands zu
   bool matches(String query) {
     final q = query.toLowerCase();
-    if (command.toLowerCase().contains(q))                     return true;
-    if (description.toLowerCase().contains(q))                 return true;
-    if (aliases.any((a) => a.toLowerCase().contains(q)))       return true;
+    if (command.toLowerCase().contains(q)) return true;
+    if (description.toLowerCase().contains(q)) return true;
+    if (aliases.any((a) => a.toLowerCase().contains(q))) return true;
+    if (subCommands.any((s) => s.matches(q))) return true;
     return false;
   }
 }
