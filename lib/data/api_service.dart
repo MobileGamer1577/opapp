@@ -1,12 +1,19 @@
+import 'dart:async' as async;
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../core/api_constants.dart';
 
-/// Typisierte API-Fehlerklassen
+// ─────────────────────────────────────────────────────────────
+//  Typisierte API-Fehlerklassen
+//  toString() gibt immer die lesbare Meldung zurück (nicht den Klassenname)
+// ─────────────────────────────────────────────────────────────
 sealed class ApiException implements Exception {
   const ApiException(this.message);
   final String message;
+
+  @override
+  String toString() => message; // ← Verhindert "Instance of 'NetworkException'"
 }
 
 class NetworkException extends ApiException {
@@ -14,7 +21,8 @@ class NetworkException extends ApiException {
 }
 
 class TimeoutException extends ApiException {
-  const TimeoutException() : super('Server antwortet nicht. Bitte später versuchen.');
+  const TimeoutException()
+      : super('Server antwortet nicht. Bitte später versuchen.');
 }
 
 class ServerException extends ApiException {
@@ -33,13 +41,16 @@ class ApiService {
 
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  /// Führt einen GET-Request durch und gibt das JSON zurück.
-  /// Wirft eine [ApiException] bei Fehlern.
+  /// GET-Request → gibt geparste JSON-Daten zurück.
+  /// Wirft [ApiException]-Unterklassen bei Fehlern.
   Future<dynamic> get(String url) async {
     try {
       final uri      = Uri.parse(url);
       final response = await _client
-          .get(uri, headers: {'Accept': 'application/json'})
+          .get(uri, headers: {
+            'Accept':     'application/json',
+            'User-Agent': 'OPAPP/1.0',
+          })
           .timeout(ApiConstants.receiveTimeout);
 
       if (response.statusCode == 200) {
@@ -51,10 +62,11 @@ class ApiService {
       throw const NetworkException();
     } on http.ClientException {
       throw const NetworkException();
+    } on async.TimeoutException {
+      throw const TimeoutException();
     } on FormatException {
       throw const ParseException();
     }
-    // TimeoutException wird nach oben weitergegeben
   }
 
   void dispose() => _client.close();

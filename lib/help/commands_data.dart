@@ -19,20 +19,16 @@ const List<ServerCommand> kServerCommands = [
   // ══════════════════════════════════════════════════════════
 
   ServerCommand(
+    command: '/album',
+    description:
+        'Öffnet das Sammelalbum-Menü. Sammelkarten erhält man durch Booster Packs aus dem Battle Pass oder Server-Kisten.',
+    category: CommandCategory.economy,
+  ),
+  ServerCommand(
     command: '/auktionshaus',
     description: 'Öffnet das Auktionshaus.',
     category: CommandCategory.economy,
-    aliases: ['/ah'],
-    subCommands: [
-      SubCommand(
-          command: '/ah sell [Preis]',
-          description: 'Stellt das Item in der Hand ein.'),
-      SubCommand(
-          command: '/ah list', description: 'Zeigt deine aktiven Auktionen.'),
-      SubCommand(
-          command: '/ah expired',
-          description: 'Zeigt abgelaufene Auktionen zum Abholen.'),
-    ],
+    aliases: ['/ah', '/auction', '/auctions', '/auktion'],
   ),
   ServerCommand(
     command: '/bank',
@@ -44,7 +40,7 @@ const List<ServerCommand> kServerCommands = [
     command: '/belohnung',
     description: 'Öffnet das Belohnungs-Menü.',
     category: CommandCategory.economy,
-    aliases: ['/reward'],
+    aliases: ['/reward', '/rewards'],
   ),
   ServerCommand(
     command: '/booster',
@@ -55,7 +51,7 @@ const List<ServerCommand> kServerCommands = [
     command: '/immo',
     description: 'Öffnet den Immobilienmarkt.',
     category: CommandCategory.economy,
-    aliases: ['/im'],
+    aliases: ['/im', '/imarkt', '/immomarkt'],
   ),
   ServerCommand(
     command: '/jobs',
@@ -83,7 +79,7 @@ const List<ServerCommand> kServerCommands = [
     command: '/oppass',
     description: 'Öffnet den OP Pass.',
     category: CommandCategory.economy,
-    aliases: ['/op'],
+    aliases: ['/op', '/battlepass', '/pass'],
   ),
   ServerCommand(
     command: '/pay',
@@ -100,25 +96,23 @@ const List<ServerCommand> kServerCommands = [
     command: '/rang',
     description: 'Öffnet den Rang-Shop.',
     category: CommandCategory.economy,
+    aliases: ['/rank', '/ranks', '/rankshop'],
   ),
   ServerCommand(
-    command: '/shop',
-    description: 'Sendet dir den Link zum Online-Shop.',
+    command: '/shopcreate',
+    description: 'Erstellt eine ChestShop-Kiste.',
     category: CommandCategory.economy,
-    aliases: ['/store'],
     subCommands: [
-      SubCommand(
-          command: '/shopcreate', description: 'Erstellt einen ChestShop.'),
       SubCommand(
           command: '/shopinfo',
           description: 'Infos über den Shop in deiner Nähe.',
           aliases: ['/sinfo']),
       SubCommand(
-          command: '/shopupdate',
-          description: 'Importiert deinen ehemaligen Rang.'),
-      SubCommand(
           command: '/cstoggle',
           description: 'Deaktiviert Nachrichten deiner Shopkisten.'),
+      SubCommand(
+          command: '/shoptransactions',
+          description: 'Zeigt die Transaktionen deiner Shopkiste an.'),
     ],
   ),
 
@@ -142,17 +136,29 @@ const List<ServerCommand> kServerCommands = [
   ),
   ServerCommand(
     command: '/home',
-    description: 'Öffnet das Home-Menü.',
+    description: 'Öffnet das Home-Interface.',
     category: CommandCategory.teleport,
     subCommands: [
       SubCommand(
-          command: '/sethome',
-          description: 'Setzt ein Home an deiner aktuellen Position.',
-          aliases: ['/home set <name>']),
+          command: '/home <name>',
+          description: 'Teleportiert dich zu deinem Home.'),
       SubCommand(
-          command: '/delhome <name>',
-          description: 'Löscht einen Home.',
-          aliases: ['/home delete <name>']),
+          command: '/home create <name>',
+          description: 'Erstellt ein Home mit dem angegebenen Namen.'),
+      SubCommand(
+          command: '/home delete <name>',
+          description: 'Löscht ein Home mit dem angegebenen Namen.'),
+      SubCommand(
+          command: '/home update <name>',
+          description: 'Aktualisiert ein Home mit dem angegebenen Namen.'),
+      SubCommand(
+          command: '/home rename <alter Name> <neuer Name>',
+          description: 'Ändert den Namen eines Homes.'),
+      SubCommand(
+          command: '/home list',
+          description: 'Listet alle von dir erstellten Homes auf.'),
+      SubCommand(
+          command: '/home help', description: 'Zeigt alle Home-Befehle an.'),
     ],
   ),
   ServerCommand(
@@ -194,8 +200,20 @@ const List<ServerCommand> kServerCommands = [
     category: CommandCategory.teleport,
     subCommands: [
       SubCommand(
-          command: '/swarp',
-          description: 'Gibt dir Informationen über die Swarp-Befehle.'),
+          command: '/swarp create <name>',
+          description: 'Erstellt einen neuen Swarp.'),
+      SubCommand(
+          command: '/swarp delete <name>', description: 'Löscht einen Swarp.'),
+      SubCommand(
+          command: '/swarp update <name>',
+          description: 'Aktualisiert einen Swarp.'),
+      SubCommand(
+          command: '/swarp list', description: 'Listet alle Swarps auf.'),
+      SubCommand(
+          command: '/swarp info <name>',
+          description: 'Zeigt Infos über einen Swarp.'),
+      SubCommand(
+          command: '/swarp top', description: 'Zeigt die beliebtesten Swarps.'),
     ],
   ),
   ServerCommand(
@@ -205,7 +223,7 @@ const List<ServerCommand> kServerCommands = [
     subCommands: [
       SubCommand(
           command: '/tpahere',
-          description: 'Sendet eine TPAHERE an einen Spieler.'),
+          description: 'Sendet eine TPAHERE an einen Spieler. (Rang-Feature)'),
       SubCommand(
           command: '/tpaccept',
           description: 'Akzeptiert eine TPA.',
@@ -229,9 +247,75 @@ const List<ServerCommand> kServerCommands = [
 
   ServerCommand(
     command: '/plot',
-    description: 'Öffnet das Plot-Menü.',
+    description: 'Öffnet das Plot-Menü und zeigt alle Plot-Befehle.',
     category: CommandCategory.plot,
     aliases: ['/p'],
+    subCommands: [
+      SubCommand(
+          command: '/plot claim',
+          description: 'Beansprucht das aktuelle Plot.',
+          aliases: ['/plot c']),
+      SubCommand(
+          command: '/plot auto',
+          description: 'Beansprucht das nächstgelegene freie Plot.',
+          aliases: ['/plot a']),
+      SubCommand(
+          command: '/plot middle',
+          description: 'Teleportiert dich in die Mitte des Plots.',
+          aliases: ['/plot center', '/plot centre']),
+      SubCommand(
+          command: '/plot visit <Spieler>',
+          description: 'Besucht das Plot eines anderen Spielers.',
+          aliases: ['/plot v', '/plot tp', '/plot goto', '/plot warp']),
+      SubCommand(
+          command: '/plot trust <Spieler>',
+          description: 'Erlaubt Bauen & WorldEdit auch wenn du offline bist.',
+          aliases: ['/plot t']),
+      SubCommand(
+          command: '/plot deny <Spieler>',
+          description: 'Verbietet den Zugang eines Spielers zu deinem Plot.',
+          aliases: ['/plot d', '/plot ban']),
+      SubCommand(
+          command: '/plot remove <Spieler>',
+          description: 'Entfernt einen Spieler vom Plot.',
+          aliases: ['/plot r', '/plot untrust', '/plot undeny', '/plot unban']),
+      SubCommand(
+          command: '/plot kick <Spieler>',
+          description: 'Wirft einen Spieler von deinem Plot.',
+          aliases: ['/plot k']),
+      SubCommand(
+          command: '/plot info',
+          description: 'Zeigt Informationen über das aktuelle Plot an.',
+          aliases: ['/plot i']),
+      SubCommand(
+          command: '/plot list <mine|shared|...>',
+          description:
+              'Listet Plots auf (mine, shared, world, top, all, forsale, unowned).',
+          aliases: ['/plot l', '/plot find', '/plot search']),
+      SubCommand(
+          command: '/plot clear',
+          description:
+              'Leert das Plot auf dem du stehst (alles wird gelöscht!).',
+          aliases: ['/plot reset']),
+      SubCommand(
+          command: '/plot delete',
+          description: 'Löscht das Plot auf dem du stehst.',
+          aliases: ['/plot dispose', '/plot del']),
+      SubCommand(
+          command: '/plot merge <Richtung>',
+          description: 'Verbindet dein Plot mit einem benachbarten Plot.',
+          aliases: ['/plot m']),
+      SubCommand(
+          command: '/plot unlink',
+          description: 'Trennt ein zusammengeführtes Mega-Plot.',
+          aliases: ['/plot u', '/plot unmerge']),
+      SubCommand(
+          command: '/plot caps',
+          description: 'Zeigt Plot-Einheitsbegrenzungen an.'),
+      SubCommand(
+          command: '/plot confirm',
+          description: 'Bestätigt eine Plot-Aktion (z.B. nach /plot delete).'),
+    ],
   ),
   ServerCommand(
     command: '/kopieren',
@@ -284,60 +368,73 @@ const List<ServerCommand> kServerCommands = [
   // ← Weitere Crafting-Commands hier einfügen
 
   // ══════════════════════════════════════════════════════════
-  //  ⭐ RANG – Rang-Features je nach Rang
+  //  ⭐ RANG – Features je nach Rang (nur für bestimmte Ränge)
   // ══════════════════════════════════════════════════════════
 
   ServerCommand(
     command: '/disguise',
-    description: 'Öffnet das Verwandlungs-Menü.',
+    description:
+        'Öffnet das Verwandlungs-Menü. Ab Ultra-Rang. Höhere Ränge haben mehr Verwandlungsoptionen.',
     category: CommandCategory.rank,
     aliases: ['/dis'],
     subCommands: [
-      SubCommand(command: '/undis', description: 'Hebt deine Verwandlung auf.'),
+      SubCommand(
+          command: '/undis',
+          description: 'Hebt deine aktuelle Verwandlung auf.',
+          aliases: ['/ud']),
     ],
   ),
   ServerCommand(
     command: '/farben',
-    description: 'Zeigt alle Chat-Farben an.',
+    description:
+        'Zeigt alle Chat-Farben an. Verfügbar für alle Ränge. Farbiges Schreiben im Chat ab Premium-Rang.',
     category: CommandCategory.rank,
-    aliases: ['/colorcodes', '/chatcolor'],
+    aliases: ['/colorcode', '/colorcodes', '/chatcolor'],
   ),
   ServerCommand(
     command: '/feed',
-    description: 'Stillt deinen Hunger.',
+    description:
+        'Stillt deinen Hunger. Ab Platin-Rang, alle 10 Minuten nutzbar.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/fly',
-    description: 'Lässt dich fliegen.',
+    description:
+        'Lässt dich fliegen. Ab Supreme-Rang, nur in der Plotwelt verfügbar.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/gift <rang> <spieler>',
-    description: 'Verschenkt den gewünschten Rang an einen Spieler.',
+    description:
+        'Verschenkt einen Rang für 7 Tage. Platin kann Premium verschenken, OP kann Diamond verschenken.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/hat',
-    description: 'Setzt dir das Item in deiner Hand auf den Kopf.',
+    description:
+        'Setzt dir das Item in deiner Hand auf den Kopf. Ab Diamond-Rang.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/heal',
-    description: 'Füllt dein Leben auf.',
+    description:
+        'Füllt dein Leben auf. Ab Platin-Rang, alle 15 Minuten nutzbar.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/nick',
-    description: 'Vergibt den gewünschten Nickname.',
+    description:
+        'Vergibt den gewünschten Nickname. Ab Diamond-Rang. Ab Legende-Rang sind farbige Nicknames möglich.',
     category: CommandCategory.rank,
     subCommands: [
-      SubCommand(command: '/unnick', description: 'Hebt deinen Nickname auf.'),
+      SubCommand(
+          command: '/unnick',
+          description: 'Hebt deinen aktuellen Nickname auf.'),
     ],
   ),
   ServerCommand(
     command: '/prefix',
-    description: 'Öffnet das Prefix-Menü.',
+    description: 'Öffnet das Prefix-Menü. Ab OP-Rang.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
@@ -353,18 +450,20 @@ const List<ServerCommand> kServerCommands = [
   ),
   ServerCommand(
     command: '/sign',
-    description: 'Signiert dein Item.',
+    description: 'Signiert dein Item. Ab Supreme-Rang.',
     category: CommandCategory.rank,
   ),
   ServerCommand(
     command: '/skull',
-    description: 'Gibt dir den Skull deiner Wahl.',
+    description:
+        'Gibt dir den Skull deiner Wahl. Ab Ultra-Rang, alle 30 Tage. Höhere Ränge können /skull häufiger nutzen.',
     category: CommandCategory.rank,
     aliases: ['/head'],
   ),
   ServerCommand(
     command: '/werbung',
-    description: 'Sendet deine Nachricht in Form einer Werbung.',
+    description:
+        'Sendet deine Nachricht in Form einer Server-Werbung. Ab Ultra-Rang.',
     category: CommandCategory.rank,
   ),
 
@@ -488,6 +587,17 @@ const List<ServerCommand> kServerCommands = [
     aliases: ['/regel'],
   ),
   ServerCommand(
+    command: '/shop',
+    description: 'Sendet dir den Link zum Online-Shop.',
+    category: CommandCategory.server,
+    aliases: ['/store'],
+  ),
+  ServerCommand(
+    command: '/shopupdate',
+    description: 'Importiert deinen ehemaligen Rang in das aktuelle System.',
+    category: CommandCategory.server,
+  ),
+  ServerCommand(
     command: '/skiptutorial',
     description: 'Überspringt das Tutorial.',
     category: CommandCategory.server,
@@ -550,7 +660,7 @@ const List<ServerCommand> kServerCommands = [
   ),
   ServerCommand(
     command: '/realname',
-    description: 'Gibt dir den echten Namen eines Spielers (bei Nick).',
+    description: 'Gibt dir den echten Namen eines Spielers (bei aktivem Nick).',
     category: CommandCategory.misc,
   ),
 

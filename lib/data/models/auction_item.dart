@@ -25,25 +25,62 @@ class AuctionItem {
   });
 
   factory AuctionItem.fromJson(Map<String, dynamic> json) {
+    // Flexible Feldnamen – API kann verschiedene Keys verwenden
+    final itemName = json['itemName']?.toString() ??
+        json['name']?.toString() ??
+        json['item']?.toString() ??
+        json['title']?.toString() ??
+        'Unbekanntes Item';
+
+    final currentBid = (json['currentBid'] as num?)?.toDouble() ??
+        (json['bid'] as num?)?.toDouble() ??
+        (json['current_bid'] as num?)?.toDouble() ??
+        (json['price'] as num?)?.toDouble() ??
+        0.0;
+
+    final buyNowPrice = (json['buyNowPrice'] as num?)?.toDouble() ??
+        (json['buyNow'] as num?)?.toDouble() ??
+        (json['buy_now'] as num?)?.toDouble() ??
+        (json['instantBuy'] as num?)?.toDouble();
+
+    // Endzeit: endsAt, end_time, expiry, expiration, expires
+    final endsAtRaw = json['endsAt']?.toString() ??
+        json['end_time']?.toString() ??
+        json['expiry']?.toString() ??
+        json['expiration']?.toString() ??
+        json['expires']?.toString();
+
+    final endsAt = endsAtRaw != null
+        ? DateTime.tryParse(endsAtRaw) ?? DateTime.now()
+        : DateTime.now();
+
+    final sellerName = json['sellerName']?.toString() ??
+        json['seller']?.toString() ??
+        json['owner']?.toString() ??
+        json['creator']?.toString() ??
+        'Unbekannt';
+
+    // Enchants und Lore als flexible Liste
+    List<String> parseStringList(dynamic raw) {
+      if (raw is List) return raw.map((e) => e.toString()).toList();
+      if (raw is String && raw.isNotEmpty) return [raw];
+      return [];
+    }
+
     return AuctionItem(
-      id:           json['id']?.toString()        ?? '',
-      itemName:     json['itemName']?.toString()  ?? 'Unbekanntes Item',
-      category:     json['category']?.toString()  ?? 'Sonstiges',
-      currentBid:   (json['currentBid']  as num?)?.toDouble() ?? 0.0,
-      buyNowPrice:  (json['buyNowPrice'] as num?)?.toDouble(),
-      amount:       (json['amount']      as num?)?.toInt() ?? 1,
-      endsAt: json['endsAt'] != null
-          ? DateTime.tryParse(json['endsAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      sellerName: json['sellerName']?.toString() ?? 'Unbekannt',
-      enchants: (json['enchants'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      lore: (json['lore'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      id: json['id']?.toString() ?? json['uuid']?.toString() ?? '',
+      itemName: itemName,
+      category: json['category']?.toString() ?? 'Sonstiges',
+      currentBid: currentBid,
+      buyNowPrice: buyNowPrice,
+      amount: (json['amount'] as num?)?.toInt() ??
+          (json['quantity'] as num?)?.toInt() ??
+          (json['count'] as num?)?.toInt() ??
+          1,
+      endsAt: endsAt,
+      sellerName: sellerName,
+      enchants: parseStringList(json['enchants'] ?? json['enchantments']),
+      lore: parseStringList(json['lore'] ?? json['description']),
     );
   }
 
@@ -51,8 +88,7 @@ class AuctionItem {
   Duration get timeLeft => endsAt.difference(DateTime.now());
 
   bool get isExpired => timeLeft.isNegative;
-
   bool get hasEnchants => enchants.isNotEmpty;
-  bool get hasLore      => lore.isNotEmpty;
-  bool get hasBuyNow    => buyNowPrice != null;
+  bool get hasLore => lore.isNotEmpty;
+  bool get hasBuyNow => buyNowPrice != null;
 }

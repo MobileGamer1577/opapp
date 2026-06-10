@@ -4,7 +4,6 @@ import '../models/auction_item.dart';
 import '../api_service.dart';
 import '../../core/api_constants.dart';
 
-// ─── Provider mit automatischem 30s-Refresh ─────────────────
 final auctionsProvider =
     AsyncNotifierProvider.autoDispose<AuctionsNotifier, List<AuctionItem>>(
   AuctionsNotifier.new,
@@ -15,28 +14,36 @@ class AuctionsNotifier extends AutoDisposeAsyncNotifier<List<AuctionItem>> {
 
   @override
   Future<List<AuctionItem>> build() async {
-    // Auto-Refresh alle 30 Sekunden
     _timer = Timer.periodic(ApiConstants.auctionRefreshInterval, (_) {
-      ref.invalidateSelf(); // löst einen neuen build() aus
+      ref.invalidateSelf();
     });
-
     ref.onDispose(() => _timer?.cancel());
-    return _fetchAuctions();
+    return _fetch();
   }
 
-  Future<List<AuctionItem>> _fetchAuctions() async {
-    final api  = ApiService();
-    final data = await api.get(ApiConstants.auctions);
+  Future<List<AuctionItem>> _fetch() async {
+    final api = ApiService();
+    // Korrekter Endpunkt: /auctions/active (nicht /auctions)
+    final data = await api.get(ApiConstants.auctionsActive);
     api.dispose();
 
+    // Direkte Liste: [ {...}, {...} ]
     if (data is List) {
       return data
           .whereType<Map<String, dynamic>>()
           .map(AuctionItem.fromJson)
           .toList();
     }
+    // Objekt mit auctions-Key: { "auctions": [...] }
     if (data is Map && data['auctions'] is List) {
       return (data['auctions'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(AuctionItem.fromJson)
+          .toList();
+    }
+    // Objekt mit data-Key: { "data": [...] }
+    if (data is Map && data['data'] is List) {
+      return (data['data'] as List)
           .whereType<Map<String, dynamic>>()
           .map(AuctionItem.fromJson)
           .toList();
@@ -44,9 +51,8 @@ class AuctionsNotifier extends AutoDisposeAsyncNotifier<List<AuctionItem>> {
     return [];
   }
 
-  /// Manuelles Refresh (Pull-to-Refresh)
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(_fetchAuctions);
+    state = await AsyncValue.guard(_fetch);
   }
 }

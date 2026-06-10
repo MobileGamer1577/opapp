@@ -1,4 +1,4 @@
-/// Aktueller Wechselkurs des OPShard-Händlers
+/// OPShard Wechselkurs vom Händler
 class ShardRate {
   final double shardsPerCoin;
   final double coinsPerShard;
@@ -11,8 +11,13 @@ class ShardRate {
   });
 
   factory ShardRate.fromJson(Map<String, dynamic> json) {
-    // Anpassen sobald echte API-Struktur bekannt ist
-    final rate = (json['rate'] as num?)?.toDouble() ?? 1.0;
+    // Flexible Feldnamen: rate, shardsPerCoin, value, exchange_rate
+    final rate = (json['rate']          as num?)?.toDouble()
+              ?? (json['shardsPerCoin'] as num?)?.toDouble()
+              ?? (json['value']         as num?)?.toDouble()
+              ?? (json['exchange_rate'] as num?)?.toDouble()
+              ?? 1.0;
+
     return ShardRate(
       shardsPerCoin: rate,
       coinsPerShard: rate > 0 ? 1.0 / rate : 0.0,
@@ -20,7 +25,6 @@ class ShardRate {
     );
   }
 
-  /// Formatierter String: "1 Coin = X Shards"
   String get displayRate =>
-      '1 Coin = ${shardsPerCoin.toStringAsFixed(2)} Shards';
+      '1 Coin = ${shardsPerCoin.toStringAsFixed(2)} OPShards';
 }
