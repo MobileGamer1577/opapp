@@ -17,29 +17,27 @@ class MarketItem {
   });
 
   factory MarketItem.fromJson(Map<String, dynamic> json) {
-    // Flexible Feldnamen – API kann verschiedene Keys verwenden
-    final id = json['material']?.toString()
-             ?? json['id']?.toString()
-             ?? json['name']?.toString()
-             ?? '';
+    // Rohname aus API (meistens ACACIA_LEAVES oder ähnlich)
+    final rawId = json['material']?.toString() ?? json['id']?.toString() ?? '';
 
+    // Anzeigename: displayName falls vorhanden, sonst Material formatieren
     final name = json['displayName']?.toString()
                ?? json['name']?.toString()
-               ?? json['material']?.toString()
-               ?? 'Unbekannt';
+               ?? _formatMaterial(rawId)
+               ?? rawId;
 
-    // Kaufpreis: buy, buyPrice, buy_price
-    final buyPrice = (json['buy']      as num?)?.toDouble()
-                  ?? (json['buyPrice'] as num?)?.toDouble()
+    // Kaufpreis – verschiedene Feldnamen
+    final buyPrice = (json['buyPrice']  as num?)?.toDouble()
+                  ?? (json['buy']       as num?)?.toDouble()
                   ?? (json['buy_price'] as num?)?.toDouble();
 
-    // Verkaufspreis: sell, sellPrice, sell_price
-    final sellPrice = (json['sell']       as num?)?.toDouble()
-                   ?? (json['sellPrice']  as num?)?.toDouble()
+    // Verkaufspreis – verschiedene Feldnamen
+    final sellPrice = (json['sellPrice']  as num?)?.toDouble()
+                   ?? (json['sell']       as num?)?.toDouble()
                    ?? (json['sell_price'] as num?)?.toDouble();
 
     return MarketItem(
-      id:        id,
+      id:        rawId,
       name:      name,
       category:  json['category']?.toString() ?? 'Sonstiges',
       buyPrice:  buyPrice,
@@ -50,8 +48,11 @@ class MarketItem {
     );
   }
 
-  double get lowestPrice => [
-    if (buyPrice  != null) buyPrice!,
-    if (sellPrice != null) sellPrice!,
-  ].fold(double.infinity, (a, b) => a < b ? a : b);
+  /// ACACIA_LEAVES → Acacia Leaves
+  static String _formatMaterial(String material) {
+    if (material.isEmpty) return material;
+    return material.split('_')
+        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+        .join(' ');
+  }
 }

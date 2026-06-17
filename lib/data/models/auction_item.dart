@@ -25,70 +25,105 @@ class AuctionItem {
   });
 
   factory AuctionItem.fromJson(Map<String, dynamic> json) {
-    // Flexible Feldnamen – API kann verschiedene Keys verwenden
-    final itemName = json['itemName']?.toString() ??
-        json['name']?.toString() ??
-        json['item']?.toString() ??
-        json['title']?.toString() ??
-        'Unbekanntes Item';
+    // ── Das Item ist ein verschachteltes Objekt ───────────
+    // API-Format: { "item": { "displayName": "...", "lore": [...], ... } }
+    final itemData = json['item'] as Map<String, dynamic>? ?? {};
 
-    final currentBid = (json['currentBid'] as num?)?.toDouble() ??
-        (json['bid'] as num?)?.toDouble() ??
-        (json['current_bid'] as num?)?.toDouble() ??
-        (json['price'] as num?)?.toDouble() ??
-        0.0;
+    // Name aus item.displayName oder Fallbacks
+    final itemName = itemData['displayName']?.toString()
+                  ?? itemData['name']?.toString()
+                  ?? json['itemName']?.toString()
+                  ?? json['name']?.toString()
+                  ?? _formatMaterial(itemData['material']?.toString() ?? '')
+                  ?? 'Unbekanntes Item';
 
-    final buyNowPrice = (json['buyNowPrice'] as num?)?.toDouble() ??
-        (json['buyNow'] as num?)?.toDouble() ??
-        (json['buy_now'] as num?)?.toDouble() ??
-        (json['instantBuy'] as num?)?.toDouble();
+    // Menge aus verschachteltem item oder direkt
+    final amount = (itemData['amount'] as num?)?.toInt()
+                ?? (json['amount']    as num?)?.toInt()
+                ?? 1;
 
-    // Endzeit: endsAt, end_time, expiry, expiration, expires
-    final endsAtRaw = json['endsAt']?.toString() ??
-        json['end_time']?.toString() ??
-        json['expiry']?.toString() ??
-        json['expiration']?.toString() ??
-        json['expires']?.toString();
+    // Lore: Liste, leere Strings rausfiltern
+    final lore = _parseStringList(itemData['lore'] ?? json['lore'])
+        .where((s) => s.isNotEmpty)
+        .toList();
 
+    // Enchants: kann {} (Map) oder [] (Liste) sein
+    final enchants = _parseEnchants(
+      itemData['enchantments'] ?? itemData['enchants'] ??
+      json['enchantments']    ?? json['enchants'],
+    );
+
+    // Endzeit
+    final endsAtRaw = json['endsAt']?.toString()
+                   ?? json['end_time']?.toString()
+                   ?? json['expiry']?.toString()
+                   ?? json['expires']?.toString();
     final endsAt = endsAtRaw != null
         ? DateTime.tryParse(endsAtRaw) ?? DateTime.now()
         : DateTime.now();
 
-    final sellerName = json['sellerName']?.toString() ??
-        json['seller']?.toString() ??
-        json['owner']?.toString() ??
-        json['creator']?.toString() ??
-        'Unbekannt';
-
-    // Enchants und Lore als flexible Liste
-    List<String> parseStringList(dynamic raw) {
-      if (raw is List) return raw.map((e) => e.toString()).toList();
-      if (raw is String && raw.isNotEmpty) return [raw];
-      return [];
-    }
+    // Verkäufer – kann UUID oder Name sein
+    final sellerName = json['sellerName']?.toString()
+                    ?? json['seller']?.toString()
+                    ?? json['owner']?.toString()
+                    ?? 'Unbekannt';
 
     return AuctionItem(
-      id: json['id']?.toString() ?? json['uuid']?.toString() ?? '',
-      itemName: itemName,
-      category: json['category']?.toString() ?? 'Sonstiges',
-      currentBid: currentBid,
-      buyNowPrice: buyNowPrice,
-      amount: (json['amount'] as num?)?.toInt() ??
-          (json['quantity'] as num?)?.toInt() ??
-          (json['count'] as num?)?.toInt() ??
-          1,
-      endsAt: endsAt,
-      sellerName: sellerName,
-      enchants: parseStringList(json['enchants'] ?? json['enchantments']),
-      lore: parseStringList(json['lore'] ?? json['description']),
+      id:          json['id']?.toString() ?? json['uuid']?.toString() ?? '',
+      itemName:    itemName,
+      category:    json['category']?.toString() ?? 'Sonstiges',
+      currentBid:  (json['currentBid']  as num?)?.toDouble()
+                ?? (json['bid']         as num?)?.toDouble()
+                ?? (json['current_bid'] as num?)?.toDouble()
+                ?? 0.0,
+      buyNowPrice: (json['buyNowPrice'] as num?)?.toDouble()
+                ?? (json['buyNow']      as num?)?.toDouble()
+                ?? (json['buy_now']     as num?)?.toDouble(),
+      amount:      amount,
+      endsAt:      endsAt,
+      sellerName:  sellerName,
+      enchants:    enchants,
+      lore:        lore,
     );
   }
 
-  /// Verbleibende Zeit bis Auktionsende
-  Duration get timeLeft => endsAt.difference(DateTime.now());
+  // ── Hilfsmethoden ──────────────────────────────────────
 
-  bool get isExpired => timeLeft.isNegative;
-  bool get hasEnchants => enchants.isNotEmpty;
-  bool get hasLore => lore.isNotEmpty;
-  bool get hasBuyNow => buyNowPrice != null;
+  /// ACACIA_LEAVES → Acacia Leaves
+  static String? _formatMaterial(String? material) {
+    if (material == null || material.isEmpty) return null;
+    return material.split('_')
+        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+        .join(' ');
+  }
+
+  /// Parst Lore-Listen
+  static List<String> _parseStringList(dynamic raw) {
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    if (raw is String && raw.isNotEmpty) return [raw];
+    return [];
+  }
+
+  /// Parst Enchants – kann [] Liste oder {} Map sein
+  static List<String> _parseEnchants(dynamic raw) {
+    if (raw is List) {
+      return raw.map((e) => e.toString()).toList();
+    }
+    if (raw is Map && raw.isNotEmpty) {
+      // { "SHARPNESS": 5, "UNBREAKING": 3 } → ["Sharpness 5", "Unbreaking 3"]
+      return raw.entries.map((e) {
+        final name = e.key.toString().split('_')
+            .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+            .join(' ');
+        return '$name ${e.value}';
+      }).toList();
+    }
+    return [];
+  }
+
+  Duration get timeLeft  => endsAt.difference(DateTime.now());
+  bool get isExpired     => timeLeft.isNegative;
+  bool get hasEnchants   => enchants.isNotEmpty;
+  bool get hasLore       => lore.isNotEmpty;
+  bool get hasBuyNow     => buyNowPrice != null;
 }

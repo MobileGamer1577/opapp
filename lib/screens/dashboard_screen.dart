@@ -56,7 +56,14 @@ class DashboardScreen extends ConsumerWidget {
 
               // ─── Live-Kurs Banner ──────────────────────────
               shardAsync.when(
-                data:    (rate) => _RateBanner(rate: rate.displayRate),
+                data: (rates) {
+                  final first = rates.first;
+                  if (first == null) return const SizedBox.shrink();
+                  return _RateBanner(
+                    label: first.displayName,
+                    rate:  first.displayRate,
+                  );
+                },
                 loading: () => const _RateBannerLoading(),
                 error:   (_, __) => const SizedBox.shrink(),
               ),
@@ -147,8 +154,9 @@ class DashboardScreen extends ConsumerWidget {
 
 // ─── Rate Banner ─────────────────────────────────────────────
 class _RateBanner extends StatelessWidget {
+  final String label;
   final String rate;
-  const _RateBanner({required this.rate});
+  const _RateBanner({required this.label, required this.rate});
 
   @override
   Widget build(BuildContext context) {
@@ -173,9 +181,9 @@ class _RateBanner extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'OPShard Kurs',
-                style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 11),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 11),
               ),
               Text(
                 rate,
