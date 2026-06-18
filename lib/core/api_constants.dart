@@ -34,6 +34,13 @@ class ApiConstants {
   // ── Merchant / OPShards ───────────────────────────────────
   static const String merchantRates = '$baseUrl/merchant/rates';
 
+  // ── Externe Spieler-Namen-API (mc-api.io) ──────────────────
+  // Löst eine Verkäufer-UUID in den aktuellen Spielernamen auf.
+  // Limit: 500 Requests/Tag → IMMER über PlayerNameRepository
+  // (mit 7-Tage-Cache) aufrufen, NIEMALS direkt!
+  static const String _mcApiBaseUrl = 'https://mc-api.io';
+  static String nameByUuid(String uuid) => '$_mcApiBaseUrl/name/$uuid';
+
   // ── Externe Links ─────────────────────────────────────────
   static const String websiteUrl = 'https://opsucht.net';
   static const String rulesUrl   = 'https://wiki.opsucht.net/regelwerk/';
