@@ -1,6 +1,17 @@
+// ═══════════════════════════════════════════════════════════════
+//  market_screen.dart – Markt-Screen
+//
+//  ✅ HIER ÄNDERN: Kartendesign, Filter-Logik
+//  ❌ NICHT ÄNDERN: marketProvider-Struktur
+//
+//  ÄNDERUNGEN (gegenüber alter Version):
+//    - Währung: "Coins" → "$" (via AppFormat.currency)
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
+import '../core/app_format.dart';
 import '../data/repositories/market_repository.dart';
 import '../data/models/market_item.dart';
 import '../widgets/app_background.dart';
@@ -13,8 +24,8 @@ class MarketScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketScreenState extends ConsumerState<MarketScreen> {
-  final _searchCtrl  = TextEditingController();
-  String _query      = '';
+  final _searchCtrl = TextEditingController();
+  String _query     = '';
   String? _category;
 
   @override
@@ -31,90 +42,90 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Markt')),
-      body: Column(
-        children: [
-          // ─── Suche ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged:  (v) => setState(() => _query = v),
-              decoration: const InputDecoration(
-                hintText:    'Item suchen …',
-                prefixIcon:  Icon(Icons.search, size: 20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // ─── Kategorien ────────────────────────────────────
-          marketAsync.when(
-            data: (items) {
-              final categories = items
-                  .map((i) => i.category)
-                  .toSet()
-                  .toList()
-                ..sort();
-              return _CategoryBar(
-                categories: categories,
-                selected:   _category,
-                onSelect:   (c) => setState(() => _category = c),
-              );
-            },
-            loading: () => const SizedBox(height: 44),
-            error:   (_, __) => const SizedBox.shrink(),
-          ),
-
-          // ─── Liste ────────────────────────────────────────
-          Expanded(
-            child: marketAsync.when(
-              data: (items) {
-                final filtered = items.where((item) {
-                  final matchQ = _query.isEmpty ||
-                      item.name.toLowerCase().contains(_query.toLowerCase());
-                  final matchC = _category == null || item.category == _category;
-                  return matchQ && matchC;
-                }).toList();
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Text('Keine Items gefunden',
-                        style: theme.textTheme.bodyMedium),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () => ref.refresh(marketProvider.future),
-                  child: ListView.separated(
-                    padding:     const EdgeInsets.all(16),
-                    itemCount:   filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _MarketItemCard(item: filtered[i]),
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error:   (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off, color: AppColors.error, size: 40),
-                    const SizedBox(height: 12),
-                    Text(e.toString(), style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(marketProvider),
-                      child: const Text('Erneut versuchen'),
-                    ),
-                  ],
+        appBar: AppBar(title: const Text('Markt')),
+        body: Column(
+          children: [
+            // ─── Suche ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged:  (v) => setState(() => _query = v),
+                decoration: const InputDecoration(
+                  hintText:   'Item suchen \u2026',
+                  prefixIcon: Icon(Icons.search, size: 20),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+
+            // ─── Kategorien ────────────────────────────────────
+            marketAsync.when(
+              data: (items) {
+                final categories = items
+                    .map((i) => i.category)
+                    .toSet()
+                    .toList()
+                  ..sort();
+                return _CategoryBar(
+                  categories: categories,
+                  selected:   _category,
+                  onSelect:   (c) => setState(() => _category = c),
+                );
+              },
+              loading: () => const SizedBox(height: 44),
+              error:   (_, __) => const SizedBox.shrink(),
+            ),
+
+            // ─── Liste ────────────────────────────────────────
+            Expanded(
+              child: marketAsync.when(
+                data: (items) {
+                  final filtered = items.where((item) {
+                    final matchQ = _query.isEmpty ||
+                        item.name.toLowerCase().contains(_query.toLowerCase());
+                    final matchC = _category == null || item.category == _category;
+                    return matchQ && matchC;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text('Keine Items gefunden',
+                          style: theme.textTheme.bodyMedium),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () => ref.refresh(marketProvider.future),
+                    child: ListView.separated(
+                      padding:          const EdgeInsets.all(16),
+                      itemCount:        filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder:      (_, i) => _MarketItemCard(item: filtered[i]),
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off, color: AppColors.error, size: 40),
+                      const SizedBox(height: 12),
+                      Text(e.toString(), style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(marketProvider),
+                        child: const Text('Erneut versuchen'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -137,15 +148,15 @@ class _CategoryBar extends StatelessWidget {
     return SizedBox(
       height: 44,
       child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding:         const EdgeInsets.symmetric(horizontal: 16),
-        itemCount:       categories.length + 1,
+        scrollDirection:  Axis.horizontal,
+        padding:          const EdgeInsets.symmetric(horizontal: 16),
+        itemCount:        categories.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           if (i == 0) {
             return FilterChip(
-              label:    const Text('Alle'),
-              selected: selected == null,
+              label:      const Text('Alle'),
+              selected:   selected == null,
               onSelected: (_) => onSelect(null),
             );
           }
@@ -230,8 +241,12 @@ class _MarketItemCard extends StatelessWidget {
 class _PriceChip extends StatelessWidget {
   final String label;
   final double price;
-  final Color color;
-  const _PriceChip({required this.label, required this.price, required this.color});
+  final Color  color;
+  const _PriceChip({
+    required this.label,
+    required this.price,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -240,8 +255,12 @@ class _PriceChip extends StatelessWidget {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         Text(
-          '${price.toStringAsFixed(2)} Coins',
-          style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 14),
+          AppFormat.currency(price, decimals: 2),
+          style: TextStyle(
+            color:      color,
+            fontWeight: FontWeight.w700,
+            fontSize:   14,
+          ),
         ),
       ],
     );
