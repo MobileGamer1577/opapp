@@ -1,4 +1,4 @@
-﻿name: opapp
+name: opapp
 description: OPAPP – Companion App für OPSUCHT.NET Citybuild Server
 publish_to: 'none'
 
@@ -21,7 +21,7 @@ dependencies:
   http: ^1.2.1
 
   # ─── Lokaler Speicher (Theme-Präferenz etc.) ─────────────────
-  shared_preferences: ^2.3.1
+  shared_preferences: ^2.5.5
 
   # ─── URL Launcher (Website-Links) ───────────────────────────
   url_launcher: ^6.3.0
