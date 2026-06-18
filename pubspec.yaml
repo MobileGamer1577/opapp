@@ -1,8 +1,8 @@
-name: opapp
+﻿name: opapp
 description: OPAPP – Companion App für OPSUCHT.NET Citybuild Server
 publish_to: 'none'
 
-version: 1.1.1-beta+8
+version: 1.1.2-beta+12
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
