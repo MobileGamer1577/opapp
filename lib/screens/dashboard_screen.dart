@@ -1,7 +1,18 @@
+// ═══════════════════════════════════════════════════════════════
+//  dashboard_screen.dart – Haupt-Dashboard
+//
+//  ✅ HIER ÄNDERN: Feature-Karten ergänzen / umordnen
+//  ❌ NICHT ÄNDERN: Provider-Watches / AppBackground-Struktur
+//
+//  ÄNDERUNGEN (gegenüber alter Version):
+//    - Währung: "Coins" → "$" in der Auktionsvorschau
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
+import '../core/app_format.dart';
 import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/auction_repository.dart';
@@ -93,11 +104,12 @@ class DashboardScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      // ← Währung jetzt via AppFormat.currency
                       ...items.take(2).map((item) => _AuctionPreviewTile(
                             name: item.amount > 1
-                                ? '${item.itemName} x${item.amount}'
+                                ? '${item.itemName} \u00d7${item.amount}'
                                 : item.itemName,
-                            bid:  '${item.currentBid.toStringAsFixed(0)} Coins',
+                            bid:  AppFormat.currency(item.currentBid),
                           )),
                       const SizedBox(height: 24),
                     ],
@@ -112,12 +124,11 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 14),
 
               // ─── Feature-Karten (Orbit-Stil) ───────────────
-              // context.push() statt go() – damit back-Button funktioniert
               _FeatureCard(
                 icon:     Icons.storefront,
                 color:    AppColors.sectionMarket,
                 title:    'Markt',
-                subtitle: 'Items • Kauf & Verkauf • Kategorien',
+                subtitle: 'Items \u2022 Kauf & Verkauf \u2022 Kategorien',
                 onTap:    () => context.push(AppRoutes.market),
               ),
               const SizedBox(height: 10),
@@ -125,7 +136,7 @@ class DashboardScreen extends ConsumerWidget {
                 icon:     Icons.gavel,
                 color:    AppColors.sectionAuction,
                 title:    'Auktionshaus',
-                subtitle: 'Live-Auktionen • Enchants • Lore',
+                subtitle: 'Live-Auktionen \u2022 Enchants \u2022 Lore',
                 onTap:    () => context.push(AppRoutes.auctions),
               ),
               const SizedBox(height: 10),
@@ -141,7 +152,7 @@ class DashboardScreen extends ConsumerWidget {
                 icon:     Icons.help_rounded,
                 color:    AppColors.sectionHelp,
                 title:    'Hilfe & Support',
-                subtitle: 'Commands • Regelwerk • Restriktionen',
+                subtitle: 'Commands \u2022 Regelwerk \u2022 Restriktionen',
                 onTap:    () => context.push(AppRoutes.help),
               ),
             ],
@@ -153,6 +164,7 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 // ─── Rate Banner ─────────────────────────────────────────────
+
 class _RateBanner extends StatelessWidget {
   final String label;
   final String rate;
@@ -183,7 +195,8 @@ class _RateBanner extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 11),
+                style: const TextStyle(
+                    color: AppColors.darkTextSecondary, fontSize: 11),
               ),
               Text(
                 rate,
@@ -244,14 +257,16 @@ class _RateBannerLoading extends StatelessWidget {
       child: const Center(
         child: SizedBox(
           width: 18, height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: AppColors.accent),
         ),
       ),
     );
   }
 }
 
-// ─── Auktion Preview Tile ────────────────────────────────────
+// ─── Auktion Preview Tile ─────────────────────────────────────
+
 class _AuctionPreviewTile extends StatelessWidget {
   final String name, bid;
   const _AuctionPreviewTile({required this.name, required this.bid});
@@ -296,6 +311,7 @@ class _AuctionPreviewTile extends StatelessWidget {
 }
 
 // ─── Feature Card (Orbit-Stil) ───────────────────────────────
+
 class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final Color color;
