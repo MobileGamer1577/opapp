@@ -1,7 +1,23 @@
+// ═══════════════════════════════════════════════════════════════
+//  auctions_screen.dart – Auktionshaus-Screen
+//
+//  ✅ HIER ÄNDERN: Kartendesign, angezeigte Felder
+//  ❌ NICHT ÄNDERN: playerNameProvider-Aufruf in _AuctionCard
+//
+//  ÄNDERUNGEN (gegenüber alter Version):
+//    - Währung: "Coins" → "$" (via AppFormat.currency)
+//    - sellerName → sellerId: Spielername wird über mc-api.io
+//      aufgelöst (7-Tage-Cache, kein Spam ans Tageslimit)
+//    - _AuctionCard ist jetzt ConsumerWidget (für playerNameProvider)
+//    - _formatDuration akzeptiert nullable Duration?
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
+import '../core/app_format.dart';
 import '../data/repositories/auction_repository.dart';
+import '../data/repositories/player_name_repository.dart';
 import '../data/models/auction_item.dart';
 import '../core/api_constants.dart';
 import '../widgets/app_background.dart';
@@ -108,21 +124,32 @@ class AuctionsScreen extends ConsumerWidget {
 }
 
 // ─── Auktions-Karte ──────────────────────────────────────────
+// ConsumerWidget wegen playerNameProvider
 
-class _AuctionCard extends StatelessWidget {
+class _AuctionCard extends ConsumerWidget {
   final AuctionItem item;
   const _AuctionCard({required this.item});
 
-  String _formatDuration(Duration d) {
+  /// Formatiert die verbleibende Zeit. null = Endzeit unbekannt.
+  String _formatDuration(Duration? d) {
+    if (d == null) return 'Unbekannt';
     if (d.isNegative) return 'Abgelaufen';
     if (d.inHours > 0) return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
     return '${d.inMinutes}m ${d.inSeconds.remainder(60)}s';
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme    = Theme.of(context);
     final timeLeft = _formatDuration(item.timeLeft);
+
+    // UUID → Spielername (aus 7-Tage-Cache oder mc-api.io)
+    final nameAsync = ref.watch(playerNameProvider(item.sellerId));
+    final sellerDisplay = nameAsync.when(
+      data:    (name) => name,
+      loading: () => 'Lädt\u2026',
+      error:   (_, __) => 'Unbekannt',
+    );
 
     return Card(
       child: Padding(
@@ -136,7 +163,7 @@ class _AuctionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item.amount > 1
-                        ? '${item.itemName} ×${item.amount}'
+                        ? '${item.itemName} \u00d7${item.amount}'
                         : item.itemName,
                     style: theme.textTheme.titleMedium,
                   ),
@@ -158,7 +185,7 @@ class _AuctionCard extends StatelessWidget {
                   children: [
                     Text('Gebot', style: theme.textTheme.bodySmall),
                     Text(
-                      '${item.currentBid.toStringAsFixed(0)} Coins',
+                      AppFormat.currency(item.currentBid),
                       style: const TextStyle(
                         color: AppColors.accent,
                         fontWeight: FontWeight.w700,
@@ -174,7 +201,7 @@ class _AuctionCard extends StatelessWidget {
                     children: [
                       Text('Sofort-Kauf', style: theme.textTheme.bodySmall),
                       Text(
-                        '${item.buyNowPrice!.toStringAsFixed(0)} Coins',
+                        AppFormat.currency(item.buyNowPrice!),
                         style: const TextStyle(
                           color: AppColors.gold,
                           fontWeight: FontWeight.w600,
@@ -217,10 +244,10 @@ class _AuctionCard extends StatelessWidget {
               ),
             ],
 
-            // ─ Verkäufer
+            // ─ Verkäufer (Klarname statt UUID)
             const SizedBox(height: 8),
             Text(
-              'von ${item.sellerName}',
+              'von $sellerDisplay',
               style: theme.textTheme.bodySmall,
             ),
           ],
