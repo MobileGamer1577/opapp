@@ -1,3 +1,15 @@
+// ═══════════════════════════════════════════════════════════════
+//  shard_rate.dart – Datenmodell für OPShard-Wechselkurse
+//
+//  ✅ HIER ÄNDERN: Neue Feldnamen in fromJson ergänzen
+//  ❌ NICHT ÄNDERN: ShardRates / ShardItem Klassenstruktur
+//
+//  HINWEIS:
+//  Falls das API-Format von /merchant/rates unbekannt ist, greift
+//  ein automatischer Fallback: das erste Textfeld wird als Name,
+//  das erste Zahlenfeld als Rate verwendet.
+// ═══════════════════════════════════════════════════════════════
+
 /// Ein einzelnes Item mit seinem OPShard-Wechselkurs
 class ShardItem {
   final String material;
@@ -11,15 +23,53 @@ class ShardItem {
   });
 
   factory ShardItem.fromJson(Map<String, dynamic> json) {
-    final material = json['material']?.toString() ?? '';
-    final name = json['displayName']?.toString()
+    // ── 1) Bekannte Feldnamen versuchen ──────────────────────
+    String? material = json['material']?.toString()
+                  ?? json['item']?.toString()
+                  ?? json['itemId']?.toString()
+                  ?? json['itemName']?.toString()
+                  ?? json['type']?.toString()
+                  ?? json['key']?.toString();
+
+    String? name = json['displayName']?.toString()
                ?? json['name']?.toString()
-               ?? _formatMaterial(material);
-    final rate = (json['rate']   as num?)?.toDouble()
-              ?? (json['value']  as num?)?.toDouble()
-              ?? (json['shards'] as num?)?.toDouble()
-              ?? 0.0;
-    return ShardItem(material: material, displayName: name, rate: rate);
+               ?? json['label']?.toString();
+
+    double? rate = (json['rate']        as num?)?.toDouble()
+              ?? (json['value']        as num?)?.toDouble()
+              ?? (json['shards']       as num?)?.toDouble()
+              ?? (json['shardRate']    as num?)?.toDouble()
+              ?? (json['opShards']     as num?)?.toDouble()
+              ?? (json['exchangeRate'] as num?)?.toDouble()
+              ?? (json['price']        as num?)?.toDouble();
+
+    // ── 2) Unbekanntes Format? Erstes Text-/Zahlenfeld nehmen ───
+    // Verhindert "Unbekannt"/"0" wenn die API andere Keys nutzt.
+    if (name == null && material == null) {
+      for (final v in json.values) {
+        if (v is String && v.isNotEmpty) {
+          name = v;
+          break;
+        }
+      }
+    }
+    if (rate == null) {
+      for (final v in json.values) {
+        if (v is num) {
+          rate = v.toDouble();
+          break;
+        }
+      }
+    }
+
+    final resolvedMaterial = material ?? '';
+    final resolvedName     = name ?? _formatMaterial(resolvedMaterial);
+
+    return ShardItem(
+      material:    resolvedMaterial,
+      displayName: resolvedName,
+      rate:        rate ?? 0.0,
+    );
   }
 
   static String _formatMaterial(String m) {
@@ -29,8 +79,9 @@ class ShardItem {
         .join(' ');
   }
 
-  /// z.B. "8.15 OPShards"
-  String get displayRate => '${rate % 1 == 0 ? rate.toStringAsFixed(0) : rate.toStringAsFixed(2)} OPShards';
+  /// z.B. "8 OPShards" oder "8.15 OPShards"
+  String get displayRate =>
+      '${rate % 1 == 0 ? rate.toStringAsFixed(0) : rate.toStringAsFixed(2)} OPShards';
 }
 
 /// Alle OPShard-Wechselkurse vom Händler
