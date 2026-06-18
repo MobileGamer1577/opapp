@@ -1,3 +1,16 @@
+// ═══════════════════════════════════════════════════════════════
+//  auction_item.dart – Datenmodell für Auktionen
+//
+//  ✅ HIER ÄNDERN: Neue Felder aus der API ergänzen
+//  ❌ NICHT ÄNDERN: _parseTimestamp (deckt alle bekannten Formate ab)
+//
+//  WICHTIGE ÄNDERUNGEN (gegenüber alter Version):
+//    - sellerName → sellerId  (enthält die UUID, Name kommt via API)
+//    - endsAt ist jetzt nullable (DateTime?)
+//    - isExpired ist nur true wenn Endzeit BEKANNT und vergangen ist
+//    - _parseTimestamp erkennt ISO-String, Unix-Sek, Unix-Ms, Zahl-als-String
+// ═══════════════════════════════════════════════════════════════
+
 /// Repräsentiert eine laufende Auktion im OPSUCHT Auktionshaus
 class AuctionItem {
   final String id;
@@ -6,8 +19,14 @@ class AuctionItem {
   final double currentBid;
   final double? buyNowPrice;
   final int amount;
-  final DateTime endsAt;
-  final String sellerName;
+
+  /// Endzeitpunkt der Auktion. null = konnte aus der API nicht
+  /// ausgelesen werden → wird NICHT als abgelaufen behandelt.
+  final DateTime? endsAt;
+
+  /// Rohe Spieler-ID des Verkäufers (UUID, kein Klarname!).
+  /// Anzeigename kommt über playerNameProvider(sellerId).
+  final String sellerId;
   final List<String> enchants;
   final List<String> lore;
 
@@ -19,7 +38,7 @@ class AuctionItem {
     this.buyNowPrice,
     required this.amount,
     required this.endsAt,
-    required this.sellerName,
+    required this.sellerId,
     required this.enchants,
     required this.lore,
   });
@@ -53,20 +72,20 @@ class AuctionItem {
       json['enchantments']    ?? json['enchants'],
     );
 
-    // Endzeit
-    final endsAtRaw = json['endsAt']?.toString()
-                   ?? json['end_time']?.toString()
-                   ?? json['expiry']?.toString()
-                   ?? json['expires']?.toString();
-    final endsAt = endsAtRaw != null
-        ? DateTime.tryParse(endsAtRaw) ?? DateTime.now()
-        : DateTime.now();
+    // ── Endzeit – viele mögliche Feldnamen + Zahl-ODER-String ──
+    // Bug bisher: API liefert endsAt als Unix-Timestamp (Zahl).
+    // .toString() + DateTime.tryParse() hat das immer auf DateTime.now()
+    // zurückfallen lassen → alle Auktionen waren sofort "abgelaufen".
+    final endsAtRaw = json['endsAt']   ?? json['end_time'] ?? json['endTime']
+                   ?? json['expiry']   ?? json['expires']  ?? json['expiresAt']
+                   ?? json['expireAt'] ?? json['until']    ?? json['deadline'];
+    final endsAt = _parseTimestamp(endsAtRaw);
 
-    // Verkäufer – kann UUID oder Name sein
-    final sellerName = json['sellerName']?.toString()
-                    ?? json['seller']?.toString()
-                    ?? json['owner']?.toString()
-                    ?? 'Unbekannt';
+    // Verkäufer – aktuell UUID, Klarname kommt über PlayerNameRepository
+    final sellerId = json['sellerName']?.toString()
+                  ?? json['seller']?.toString()
+                  ?? json['owner']?.toString()
+                  ?? '';
 
     return AuctionItem(
       id:          json['id']?.toString() ?? json['uuid']?.toString() ?? '',
@@ -81,7 +100,7 @@ class AuctionItem {
                 ?? (json['buy_now']     as num?)?.toDouble(),
       amount:      amount,
       endsAt:      endsAt,
-      sellerName:  sellerName,
+      sellerId:    sellerId,
       enchants:    enchants,
       lore:        lore,
     );
@@ -121,9 +140,43 @@ class AuctionItem {
     return [];
   }
 
-  Duration get timeLeft  => endsAt.difference(DateTime.now());
-  bool get isExpired     => timeLeft.isNegative;
-  bool get hasEnchants   => enchants.isNotEmpty;
-  bool get hasLore       => lore.isNotEmpty;
-  bool get hasBuyNow     => buyNowPrice != null;
+  /// Versteht alle gängigen Timestamp-Formate der OPSUCHT-API:
+  ///   - ISO-8601-String:   "2025-06-18T20:00:00Z"
+  ///   - Unix-Sekunden:     1750000000
+  ///   - Unix-Millisekunden: 1750000000000
+  ///   - Zahl als String:   "1750000000"
+  static DateTime? _parseTimestamp(dynamic raw) {
+    if (raw == null) return null;
+
+    if (raw is num) {
+      // Heuristik: > 10 Stellen → Millisekunden, sonst Sekunden
+      final isMillis = raw > 9999999999;
+      return DateTime.fromMillisecondsSinceEpoch(
+        isMillis ? raw.toInt() : raw.toInt() * 1000,
+      );
+    }
+
+    if (raw is String) {
+      // Zuerst als ISO-Datum versuchen
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) return parsed;
+      // Sonst als Zahl in String-Form (z.B. "1750000000")
+      final asNum = num.tryParse(raw);
+      if (asNum != null) return _parseTimestamp(asNum);
+    }
+
+    return null;
+  }
+
+  // ── Berechnete Eigenschaften ──────────────────────────
+
+  /// null wenn Endzeit unbekannt, sonst verbleibende Zeit
+  Duration? get timeLeft => endsAt?.difference(DateTime.now());
+
+  /// Nur true wenn die Endzeit BEKANNT ist UND in der Vergangenheit liegt.
+  /// endsAt == null wird NICHT als abgelaufen interpretiert.
+  bool get isExpired   => timeLeft != null && timeLeft!.isNegative;
+  bool get hasEnchants => enchants.isNotEmpty;
+  bool get hasLore     => lore.isNotEmpty;
+  bool get hasBuyNow   => buyNowPrice != null;
 }
