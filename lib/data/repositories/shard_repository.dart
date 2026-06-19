@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════
+//  shard_repository.dart – Lädt die OPShard-Wechselkurse
+//
+//  ✅ HIER ÄNDERN: ratesRefreshInterval in api_constants.dart
+//  ❌ NICHT ÄNDERN: Provider-Name shardRateProvider
+//
+//  API-FORMAT (bestätigt): /merchant/rates liefert immer eine
+//  direkte Liste von Objekten – siehe shard_rate.dart für Details.
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shard_rate.dart';
 import '../api_service.dart';
@@ -10,39 +20,22 @@ final shardRateProvider = FutureProvider.autoDispose<ShardRates>((ref) async {
 
   final fetched = DateTime.now();
 
-  // Liste von Rate-Objekten: [ {"material":"...", "rate": 8.15}, ... ]
-  if (data is List && data.isNotEmpty) {
-    if (data.first is Map<String, dynamic>) {
-      final items = (data as List)
-          .whereType<Map<String, dynamic>>()
-          .map(ShardItem.fromJson)
-          .toList();
-      return ShardRates(items: items, fetchedAt: fetched);
-    }
+  // Normalfall: direkte Liste [ {...}, {...} ]
+  if (data is List) {
+    final items = data
+        .whereType<Map<String, dynamic>>()
+        .map(ShardItem.fromJson)
+        .toList();
+    return ShardRates(items: items, fetchedAt: fetched);
   }
 
-  // Map mit Material-Keys: { "DIAMOND_BLOCK": 8.15, ... }
-  if (data is Map<String, dynamic>) {
-    // Versuche als ShardItem-Objekt zu parsen
-    try {
-      return ShardRates(
-        items: [ShardItem.fromJson(data)],
-        fetchedAt: fetched,
-      );
-    } catch (_) {}
-
-    // Alternativ: flache Map { "MATERIAL": rate }
-    final items = data.entries
-        .where((e) => e.value is num)
-        .map((e) => ShardItem(
-              material:    e.key,
-              displayName: e.key.split('_')
-                  .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-                  .join(' '),
-              rate:        (e.value as num).toDouble(),
-            ))
+  // Fallback falls die API doch mal ein Objekt mit Listen-Key liefert
+  if (data is Map && data['rates'] is List) {
+    final items = (data['rates'] as List)
+        .whereType<Map<String, dynamic>>()
+        .map(ShardItem.fromJson)
         .toList();
-    if (items.isNotEmpty) return ShardRates(items: items, fetchedAt: fetched);
+    return ShardRates(items: items, fetchedAt: fetched);
   }
 
   return ShardRates(items: [], fetchedAt: fetched);
