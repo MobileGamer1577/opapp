@@ -6,8 +6,9 @@
 //  ❌ NICHT ÄNDERN: Klassen-Struktur / Konstruktor
 //
 //  API-DOKUMENTATION:
-//    /market/items        → alle Items mit Kauf-/Verkaufspreisen
-//    /market/categories   → alle Kategorien
+//    /market/items        → alle Materialien mit Icon-URL (kein Preis!)
+//    /market/categories   → alle Kategorien mit Name + Icon
+//    /market/prices       → Kategorie → Material → [BUY, SELL] Preise
 //    /auctions/active     → alle aktiven Auktionen (mit Enchants & Lore)
 //    /auctions/categories → Auktions-Kategorien
 //    /merchant/rates      → OPShard Wechselkurse
@@ -20,10 +21,13 @@ class ApiConstants {
   static const String baseUrl = 'https://api.opsucht.net';
 
   // ── Markt ─────────────────────────────────────────────────
-  // /market        → gibt nur API-Dokumentation zurück (nicht verwenden)
-  // /market/items  → echte Daten: alle Items mit Preisen
+  // /market/items      → nur Material + Icon (keine Preise!)
+  // /market/categories → Kategorie-Namen + repräsentatives Icon
+  // /market/prices     → die eigentlichen Kauf-/Verkaufspreise,
+  //                      verschachtelt nach Kategorie → Material
   static const String marketItems      = '$baseUrl/market/items';
   static const String marketCategories = '$baseUrl/market/categories';
+  static const String marketPrices     = '$baseUrl/market/prices';
 
   // ── Auktionshaus ──────────────────────────────────────────
   // /auctions         → gibt nur API-Dokumentation zurück (nicht verwenden)
