@@ -1,3 +1,16 @@
+// ═══════════════════════════════════════════════════════════════
+//  shards_screen.dart – OPShards-Wechselkurse
+//
+//  ✅ HIER ÄNDERN: Kartendesign
+//  ❌ NICHT ÄNDERN: shardRateProvider-Aufruf
+//
+//  ÄNDERUNGEN (gegenüber alter Version):
+//    - Icon je Item (siehe shard_rate.dart → shardIconFor)
+//    - Basiskurs wird unter dem Namen angezeigt
+//    - Kurs ist grün (über Basis) / rot (unter Basis) eingefärbt
+//    - kleines Prozent-Badge zeigt die Abweichung zur Basis
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
@@ -97,7 +110,13 @@ class _ShardItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Farbe je nach Kurs vs. Basiswert: Grün = drüber, Rot = drunter
+    final trendColor = item.isAboveBase
+        ? AppColors.success
+        : item.isBelowBase
+            ? AppColors.error
+            : AppColors.darkTextSecondary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -108,7 +127,7 @@ class _ShardItemCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Diamond icon als Platzhalter
+          // Icon je Item (siehe shard_rate.dart → shardIcons)
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
@@ -116,32 +135,61 @@ class _ShardItemCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border:       Border.all(color: AppColors.accent.withOpacity(0.25)),
             ),
-            child: const Icon(Icons.diamond, color: AppColors.accent, size: 20),
+            child: Icon(shardIconFor(item.displayName), color: AppColors.accent, size: 20),
           ),
           const SizedBox(width: 14),
 
-          // Name
+          // Name + Basiskurs
           Expanded(
-            child: Text(
-              item.displayName,
-              style: const TextStyle(
-                color:      Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize:   15,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.displayName,
+                  style: const TextStyle(
+                    color:      Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize:   15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Basis: ${item.displayBase}',
+                  style: const TextStyle(
+                    color:    AppColors.darkTextHint,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // Kurs-Wert
+          // Aktueller Kurs + Veränderung zur Basis
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 item.displayRate,
-                style: const TextStyle(
-                  color:      AppColors.accent,
+                style: TextStyle(
+                  color:      trendColor,
                   fontWeight: FontWeight.w700,
                   fontSize:   15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color:        trendColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  item.displayChange,
+                  style: TextStyle(
+                    color:      trendColor,
+                    fontSize:   11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
