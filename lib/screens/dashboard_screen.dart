@@ -6,6 +6,10 @@
 //
 //  ÄNDERUNGEN (gegenüber alter Version):
 //    - Währung: "Coins" → "$" in der Auktionsvorschau
+//    - Live-Kurs Banner zeigt jetzt rates.best (Item mit dem höchsten
+//      Aufschlag auf den Basiswert) statt einfach rates.first
+//    - Banner-Kurs ist grün/rot je nachdem ob über/unter Basis,
+//      und zeigt das passende Icon des Items
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -16,6 +20,7 @@ import '../core/app_format.dart';
 import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/auction_repository.dart';
+import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -66,13 +71,21 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 28),
 
               // ─── Live-Kurs Banner ──────────────────────────
+              // Zeigt das Item mit dem aktuell besten Kurs (höchster
+              // Aufschlag auf den Basiswert), nicht einfach das erste.
               shardAsync.when(
                 data: (rates) {
-                  final first = rates.first;
-                  if (first == null) return const SizedBox.shrink();
+                  final best = rates.best;
+                  if (best == null) return const SizedBox.shrink();
                   return _RateBanner(
-                    label: first.displayName,
-                    rate:  first.displayRate,
+                    label:     best.displayName,
+                    rate:      best.displayRate,
+                    icon:      shardIconFor(best.displayName),
+                    rateColor: best.isAboveBase
+                        ? AppColors.success
+                        : best.isBelowBase
+                            ? AppColors.error
+                            : Colors.white,
                   );
                 },
                 loading: () => const _RateBannerLoading(),
@@ -168,7 +181,14 @@ class DashboardScreen extends ConsumerWidget {
 class _RateBanner extends StatelessWidget {
   final String label;
   final String rate;
-  const _RateBanner({required this.label, required this.rate});
+  final IconData icon;
+  final Color rateColor;
+  const _RateBanner({
+    required this.label,
+    required this.rate,
+    required this.icon,
+    required this.rateColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +207,7 @@ class _RateBanner extends StatelessWidget {
               color:        AppColors.sectionShards.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.diamond, color: AppColors.sectionShards, size: 18),
+            child: Icon(icon, color: AppColors.sectionShards, size: 18),
           ),
           const SizedBox(width: 12),
           Column(
@@ -200,8 +220,8 @@ class _RateBanner extends StatelessWidget {
               ),
               Text(
                 rate,
-                style: const TextStyle(
-                  color:      Colors.white,
+                style: TextStyle(
+                  color:      rateColor,
                   fontWeight: FontWeight.w700,
                   fontSize:   15,
                 ),
