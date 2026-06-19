@@ -2,10 +2,14 @@
 //  market_screen.dart – Markt-Screen
 //
 //  ✅ HIER ÄNDERN: Kartendesign, Filter-Logik
-//  ❌ NICHT ÄNDERN: marketProvider-Struktur
+//  ❌ NICHT ÄNDERN: marketProvider / marketCategoriesProvider-Struktur
 //
-//  ÄNDERUNGEN (gegenüber alter Version):
-//    - Währung: "Coins" → "$" (via AppFormat.currency)
+//  ÄNDERUNGEN:
+//    - Echte Preise aus /market/prices (BUY = Kaufpreis, SELL = Verkaufspreis)
+//    - Item-Icons aus /market/items
+//    - Kategorie-Chips jetzt mit echten Kategorien + Icon (/market/categories)
+//    - Tap auf Item öffnet Detail-Sheet mit aktiven Angeboten
+//      (Preisverlauf folgt später, siehe Markierung in _MarketItemSheet)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -14,6 +18,7 @@ import '../core/app_colors.dart';
 import '../core/app_format.dart';
 import '../data/repositories/market_repository.dart';
 import '../data/models/market_item.dart';
+import '../data/models/market_category.dart';
 import '../widgets/app_background.dart';
 
 class MarketScreen extends ConsumerStatefulWidget {
@@ -36,7 +41,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final marketAsync = ref.watch(marketProvider);
+    final marketAsync     = ref.watch(marketProvider);
+    final categoriesAsync = ref.watch(marketCategoriesProvider);
     final theme = Theme.of(context);
 
     return AppBackground(
@@ -59,20 +65,13 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
             ),
             const SizedBox(height: 8),
 
-            // ─── Kategorien ────────────────────────────────────
-            marketAsync.when(
-              data: (items) {
-                final categories = items
-                    .map((i) => i.category)
-                    .toSet()
-                    .toList()
-                  ..sort();
-                return _CategoryBar(
-                  categories: categories,
-                  selected:   _category,
-                  onSelect:   (c) => setState(() => _category = c),
-                );
-              },
+            // ─── Kategorien (mit Icon aus /market/categories) ──
+            categoriesAsync.when(
+              data: (categories) => _CategoryBar(
+                categories: categories,
+                selected:   _category,
+                onSelect:   (c) => setState(() => _category = c),
+              ),
               loading: () => const SizedBox(height: 44),
               error:   (_, __) => const SizedBox.shrink(),
             ),
@@ -96,7 +95,10 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () => ref.refresh(marketProvider.future),
+                    onRefresh: () async {
+                      ref.invalidate(marketCategoriesProvider);
+                      await ref.refresh(marketProvider.future);
+                    },
                     child: ListView.separated(
                       padding:          const EdgeInsets.all(16),
                       itemCount:        filtered.length,
@@ -130,10 +132,56 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
   }
 }
 
+// ─── Netzwerk-Icon mit Lade-/Fehler-Fallback ─────────────────
+// Wird für Item-Icons UND Kategorie-Icons verwendet.
+
+class _NetworkIcon extends StatelessWidget {
+  final String? url;
+  final double size;
+  final IconData fallback;
+
+  const _NetworkIcon({
+    required this.url,
+    this.size = 28,
+    this.fallback = Icons.inventory_2_outlined,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return Icon(fallback, color: AppColors.darkTextHint, size: size * 0.6);
+    }
+    return Image.network(
+      url!,
+      width:  size,
+      height: size,
+      fit:    BoxFit.contain,
+      filterQuality: FilterQuality.none, // Pixel-Art bleibt scharf
+      errorBuilder: (_, __, ___) =>
+          Icon(fallback, color: AppColors.darkTextHint, size: size * 0.6),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Center(
+            child: SizedBox(
+              width: size * 0.4,
+              height: size * 0.4,
+              child: const CircularProgressIndicator(
+                  strokeWidth: 1.5, color: AppColors.accent),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ─── Kategorie-Filter-Leiste ─────────────────────────────────
 
 class _CategoryBar extends StatelessWidget {
-  final List<String> categories;
+  final List<MarketCategory> categories;
   final String? selected;
   final ValueChanged<String?> onSelect;
 
@@ -162,9 +210,14 @@ class _CategoryBar extends StatelessWidget {
           }
           final cat = categories[i - 1];
           return FilterChip(
-            label:      Text(cat),
-            selected:   selected == cat,
-            onSelected: (_) => onSelect(selected == cat ? null : cat),
+            avatar: _NetworkIcon(
+              url:      cat.icon,
+              size:     18,
+              fallback: Icons.category_outlined,
+            ),
+            label:      Text(cat.name),
+            selected:   selected == cat.name,
+            onSelected: (_) => onSelect(selected == cat.name ? null : cat.name),
           );
         },
       ),
@@ -182,56 +235,87 @@ class _MarketItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(item.name, style: theme.textTheme.titleMedium),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _MarketItemSheet(item: item),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // ─ Icon ─────────────────────────────────────
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color:        AppColors.accent.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                  border:       Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color:        AppColors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    item.category,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.accent,
+                child: Center(child: _NetworkIcon(url: item.icon, size: 28)),
+              ),
+              const SizedBox(width: 12),
+
+              // ─ Name, Kategorie, Preise ──────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: theme.textTheme.titleMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color:        AppColors.accent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            item.category,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _PriceChip(
+                          label: 'Kaufen',
+                          price: item.buyPrice,
+                          color: AppColors.buyColor,
+                        ),
+                        const SizedBox(width: 10),
+                        _PriceChip(
+                          label: 'Verkaufen',
+                          price: item.sellPrice,
+                          color: AppColors.sellColor,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                if (item.buyPrice != null)
-                  _PriceChip(
-                    label: 'Kaufen',
-                    price: item.buyPrice!,
-                    color: AppColors.buyColor,
-                  ),
-                if (item.buyPrice != null && item.sellPrice != null)
-                  const SizedBox(width: 8),
-                if (item.sellPrice != null)
-                  _PriceChip(
-                    label: 'Verkaufen',
-                    price: item.sellPrice!,
-                    color: AppColors.sellColor,
-                  ),
-                const Spacer(),
-                Text(
-                  '${item.stock}x',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.textTheme.bodySmall?.color),
+            ],
+          ),
         ),
       ),
     );
@@ -263,6 +347,137 @@ class _PriceChip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Detail-Sheet (bei Tap auf ein Item) ─────────────────────
+
+class _MarketItemSheet extends StatelessWidget {
+  final MarketItem item;
+  const _MarketItemSheet({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color:        AppColors.accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border:       Border.all(color: AppColors.accent.withOpacity(0.25)),
+                ),
+                child: Center(child: _NetworkIcon(url: item.icon, size: 36)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color:        AppColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        item.category,
+                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.accent),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          _DetailPriceRow(
+            label:    'Kaufpreis',
+            sublabel: 'Das zahlst du im Markt',
+            price:    item.buyPrice,
+            orders:   item.buyOrders,
+            color:    AppColors.buyColor,
+          ),
+          const SizedBox(height: 12),
+          _DetailPriceRow(
+            label:    'Verkaufspreis',
+            sublabel: 'Das bekommst du im Markt',
+            price:    item.sellPrice,
+            orders:   item.sellOrders,
+            color:    AppColors.sellColor,
+          ),
+
+          // ✅ HIER ÄNDERN: Preisverlauf-Chart hier einfügen,
+          // sobald ein entsprechender API-Endpunkt verfügbar ist.
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailPriceRow extends StatelessWidget {
+  final String label, sublabel;
+  final double price;
+  final int orders;
+  final Color color;
+
+  const _DetailPriceRow({
+    required this.label,
+    required this.sublabel,
+    required this.price,
+    required this.orders,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color:        color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.titleMedium?.copyWith(color: color)),
+                Text(sublabel, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                AppFormat.currency(price, decimals: 2),
+                style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$orders aktive Angebote',
+                style: theme.textTheme.bodySmall?.copyWith(color: AppColors.darkTextHint),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
