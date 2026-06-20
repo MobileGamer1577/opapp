@@ -3,11 +3,15 @@
 //
 //  ✅ HIER ÄNDERN: auctionRefreshInterval in api_constants.dart
 //  ❌ NICHT ÄNDERN: Provider-Struktur / _parseItems
+//
+//  NEU: auctionCategoriesProvider lädt /auctions/categories für
+//  die Filter-Leiste im Auktionshaus-Screen.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/auction_item.dart';
+import '../models/auction_category.dart';
 import '../api_service.dart';
 import '../../core/api_constants.dart';
 
@@ -71,3 +75,25 @@ class AuctionsNotifier extends AutoDisposeAsyncNotifier<List<AuctionItem>> {
     state = await AsyncValue.guard(_fetch);
   }
 }
+
+// ── Kategorien (für Filter-Leiste) ─────────────────────────────
+final auctionCategoriesProvider =
+    FutureProvider.autoDispose<List<AuctionCategory>>((ref) async {
+  final api  = ApiService();
+  final data = await api.get(ApiConstants.auctionsCategories);
+  api.dispose();
+
+  if (data is List) {
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(AuctionCategory.fromJson)
+        .toList();
+  }
+  if (data is Map && data['categories'] is List) {
+    return (data['categories'] as List)
+        .whereType<Map<String, dynamic>>()
+        .map(AuctionCategory.fromJson)
+        .toList();
+  }
+  return [];
+});
