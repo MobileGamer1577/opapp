@@ -4,9 +4,15 @@
 //  ✅ HIER ÄNDERN: Neue Felder aus der API ergänzen
 //  ❌ NICHT ÄNDERN: _parseTimestamp (deckt alle bekannten Formate ab)
 //
-//  WICHTIGE ÄNDERUNGEN (gegenüber alter Version):
+//  ÄNDERUNGEN (Auktionshaus-Update):
+//    - 🐛 id kam vorher immer leer raus – API liefert "uid", nicht
+//      "id"/"uuid". Jetzt korrekt geprüft.
+//    - 🐛 buyNowPrice wurde nie befüllt – API liefert "instantBuyPrice",
+//      das wurde vorher gar nicht abgefragt.
+//    - NEU: startBid (Startpreis, getrennt vom currentBid)
+//    - NEU: startTime (Beginn der Auktion, nullable wie endsAt)
 //    - sellerName → sellerId  (enthält die UUID, Name kommt via API)
-//    - endsAt ist jetzt nullable (DateTime?)
+//    - endsAt ist nullable (DateTime?)
 //    - isExpired ist nur true wenn Endzeit BEKANNT und vergangen ist
 //    - _parseTimestamp erkennt ISO-String, Unix-Sek, Unix-Ms, Zahl-als-String
 // ═══════════════════════════════════════════════════════════════
@@ -16,9 +22,13 @@ class AuctionItem {
   final String id;
   final String itemName;
   final String category;
+  final double startBid;
   final double currentBid;
   final double? buyNowPrice;
   final int amount;
+
+  /// Beginn der Auktion. null = konnte aus der API nicht ausgelesen werden.
+  final DateTime? startTime;
 
   /// Endzeitpunkt der Auktion. null = konnte aus der API nicht
   /// ausgelesen werden → wird NICHT als abgelaufen behandelt.
@@ -34,9 +44,11 @@ class AuctionItem {
     required this.id,
     required this.itemName,
     required this.category,
+    required this.startBid,
     required this.currentBid,
     this.buyNowPrice,
     required this.amount,
+    required this.startTime,
     required this.endsAt,
     required this.sellerId,
     required this.enchants,
@@ -72,6 +84,11 @@ class AuctionItem {
       json['enchantments']    ?? json['enchants'],
     );
 
+    // ── Startzeit ──────────────────────────────────────────
+    final startTimeRaw = json['startTime']  ?? json['start_time']
+                       ?? json['startedAt'] ?? json['begin'];
+    final startTime = _parseTimestamp(startTimeRaw);
+
     // ── Endzeit – viele mögliche Feldnamen + Zahl-ODER-String ──
     // Bug bisher: API liefert endsAt als Unix-Timestamp (Zahl).
     // .toString() + DateTime.tryParse() hat das immer auf DateTime.now()
@@ -88,17 +105,29 @@ class AuctionItem {
                   ?? '';
 
     return AuctionItem(
-      id:          json['id']?.toString() ?? json['uuid']?.toString() ?? '',
+      // 🐛 "uid" ist der echte API-Feldname (siehe /auctions/active) –
+      // vorher wurde nur "id"/"uuid" geprüft, die ID war dadurch leer.
+      id:          json['uid']?.toString()
+                ?? json['id']?.toString()
+                ?? json['uuid']?.toString()
+                ?? '',
       itemName:    itemName,
       category:    json['category']?.toString() ?? 'Sonstiges',
+      startBid:    (json['startBid']  as num?)?.toDouble()
+                ?? (json['start_bid'] as num?)?.toDouble()
+                ?? 0.0,
       currentBid:  (json['currentBid']  as num?)?.toDouble()
                 ?? (json['bid']         as num?)?.toDouble()
                 ?? (json['current_bid'] as num?)?.toDouble()
                 ?? 0.0,
-      buyNowPrice: (json['buyNowPrice'] as num?)?.toDouble()
-                ?? (json['buyNow']      as num?)?.toDouble()
-                ?? (json['buy_now']     as num?)?.toDouble(),
+      // 🐛 "instantBuyPrice" ist der echte API-Feldname – vorher
+      // wurde er nicht geprüft, Sofort-Kauf war nie befüllt.
+      buyNowPrice: (json['instantBuyPrice'] as num?)?.toDouble()
+                ?? (json['buyNowPrice']     as num?)?.toDouble()
+                ?? (json['buyNow']          as num?)?.toDouble()
+                ?? (json['buy_now']         as num?)?.toDouble(),
       amount:      amount,
+      startTime:   startTime,
       endsAt:      endsAt,
       sellerId:    sellerId,
       enchants:    enchants,
@@ -141,7 +170,7 @@ class AuctionItem {
   }
 
   /// Versteht alle gängigen Timestamp-Formate der OPSUCHT-API:
-  ///   - ISO-8601-String:   "2025-06-18T20:00:00Z"
+  ///   - ISO-8601-String:   "2026-06-18T08:08:05.242Z"
   ///   - Unix-Sekunden:     1750000000
   ///   - Unix-Millisekunden: 1750000000000
   ///   - Zahl als String:   "1750000000"
