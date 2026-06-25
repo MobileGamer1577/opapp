@@ -10,16 +10,21 @@
 //      Aufschlag auf den Basiswert) statt einfach rates.first
 //    - Banner-Kurs ist grün/rot je nachdem ob über/unter Basis,
 //      und zeigt das passende Icon des Items
+//
+//  ÄNDERUNGEN (Design-Update):
+//    - "Aktuelle Auktionen"-Vorschau komplett entfernt – unklar war,
+//      nach welchem Kriterium eine Auktion als "aktuell" zählt.
+//      Vollständige Liste gibt es weiterhin im Auktionshaus-Screen.
+//    - Zahnrad-Icon im Header → öffnet die neuen Einstellungen
+//      (AppRoutes.settings)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
-import '../core/app_format.dart';
 import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
-import '../data/repositories/auction_repository.dart';
 import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
 
@@ -30,7 +35,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme      = Theme.of(context);
     final shardAsync = ref.watch(shardRateProvider);
-    final auctAsync  = ref.watch(auctionsProvider);
 
     return AppBackground(
       child: Scaffold(
@@ -56,15 +60,23 @@ class DashboardScreen extends ConsumerWidget {
                     child: const Icon(Icons.language, color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'OPSUCHT.NET',
-                        style: theme.textTheme.titleLarge?.copyWith(fontSize: 20),
-                      ),
-                      Text('Companion App', style: theme.textTheme.bodySmall),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'OPSUCHT.NET',
+                          style: theme.textTheme.titleLarge?.copyWith(fontSize: 20),
+                        ),
+                        Text('Companion App', style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                  // ← Zahnrad-Icon: öffnet die Einstellungen
+                  IconButton(
+                    icon: const Icon(Icons.settings_outlined,
+                        color: AppColors.darkTextSecondary),
+                    onPressed: () => context.push(AppRoutes.settings),
                   ),
                 ],
               ),
@@ -92,45 +104,6 @@ class DashboardScreen extends ConsumerWidget {
                 error:   (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 28),
-
-              // ─── Auktionen Vorschau ────────────────────────
-              auctAsync.when(
-                data: (items) {
-                  if (items.isEmpty) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Aktuelle Auktionen',
-                              style: theme.textTheme.titleMedium),
-                          GestureDetector(
-                            onTap: () => context.push(AppRoutes.auctions),
-                            child: Text(
-                              'Alle anzeigen',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.accent,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // ← Währung jetzt via AppFormat.currency
-                      ...items.take(2).map((item) => _AuctionPreviewTile(
-                            name: item.amount > 1
-                                ? '${item.itemName} \u00d7${item.amount}'
-                                : item.itemName,
-                            bid:  AppFormat.currency(item.currentBid),
-                          )),
-                      const SizedBox(height: 24),
-                    ],
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error:   (_, __) => const SizedBox.shrink(),
-              ),
 
               // ─── Section-Label ─────────────────────────────
               Text('Bereiche', style: theme.textTheme.titleMedium),
@@ -280,51 +253,6 @@ class _RateBannerLoading extends StatelessWidget {
           child: CircularProgressIndicator(
               strokeWidth: 2, color: AppColors.accent),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Auktion Preview Tile ─────────────────────────────────────
-
-class _AuctionPreviewTile extends StatelessWidget {
-  final String name, bid;
-  const _AuctionPreviewTile({required this.name, required this.bid});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color:        Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.gavel, color: AppColors.sectionAuction, size: 16),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(
-                color:      Colors.white,
-                fontSize:   13,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Text(
-            bid,
-            style: const TextStyle(
-              color:      AppColors.accent,
-              fontWeight: FontWeight.w700,
-              fontSize:   13,
-            ),
-          ),
-        ],
       ),
     );
   }
