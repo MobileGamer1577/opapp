@@ -13,6 +13,10 @@
 //    context.push(AppRoutes.market)   → mit Back-Button
 //    context.go(AppRoutes.dashboard)  → ohne Back-Button
 //    context.pop()                    → zurück
+//
+//  ÄNDERUNGEN (Design-Update):
+//    - Neue Route AppRoutes.settings → SettingsScreen
+//      (erreichbar über das Zahnrad-Icon im Dashboard-Header)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +28,7 @@ import '../screens/auctions_screen.dart';
 import '../screens/shards_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/commands_screen.dart';
+import '../screens/settings_screen.dart';
 // ← Neue Screen-Imports hier hinzufügen
 
 // ── Route-Namen als Konstanten ────────────────────────────────
@@ -34,6 +39,7 @@ abstract class AppRoutes {
   static const shards = '/shards';
   static const help = '/help';
   static const commands = '/commands';
+  static const settings = '/settings';
   // ← Neue Route hier ergänzen
 }
 
@@ -68,6 +74,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.commands,
         builder: (_, __) => const CommandsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (_, __) => const SettingsScreen(),
       ),
       // ← Neue GoRoute hier ergänzen, z.B.:
       // GoRoute(
