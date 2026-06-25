@@ -12,6 +12,12 @@
 //    - Tap auf eine Karte öffnet ein Detail-Sheet mit Verkäufer,
 //      Start-/Endzeit (Datum + Uhrzeit), Lore, Startpreis,
 //      Sofort-Kauf-Preis und einem live tickenden Countdown
+//
+//  ÄNDERUNGEN (Design-Update):
+//    - Info-Banner "Aktualisiert alle 30 Sekunden automatisch"
+//      entfernt. Die Auto-Refresh-Logik selbst (ApiConstants.
+//      auctionRefreshInterval in auction_repository.dart) läuft
+//      unverändert im Hintergrund weiter – nur die Anzeige ist weg.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -23,7 +29,6 @@ import '../data/repositories/auction_repository.dart';
 import '../data/repositories/player_name_repository.dart';
 import '../data/models/auction_item.dart';
 import '../data/models/auction_category.dart';
-import '../core/api_constants.dart';
 import '../widgets/app_background.dart';
 import '../widgets/network_icon.dart';
 
@@ -170,20 +175,6 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen> {
               error:   (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 10),
-
-            // ─── Refresh-Info-Banner ───────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-              color: Colors.white.withOpacity(0.04),
-              child: Text(
-                'Aktualisiert alle ${ApiConstants.auctionRefreshInterval.inSeconds} Sekunden automatisch',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.accent,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
 
             // ─── Liste ────────────────────────────────────
             Expanded(
