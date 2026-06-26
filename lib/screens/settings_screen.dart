@@ -5,12 +5,20 @@
 //  ✅ HIER ÄNDERN: Neue Einstellungs-Karten hinzufügen
 //  ❌ NICHT ÄNDERN: Card-/Listenaufbau (_SettingsCard)
 //
-//  STATUS: Reiner Platzhalter. Alle vier Punkte zeigen aktuell nur
-//  einen Hinweis-SnackBar ("Diese Funktion ist noch nicht verfügbar.")
-//  an. Sobald ein Bereich fertig implementiert ist, einfach den
-//  onTap der jeweiligen _SettingsCard unten ersetzen – z.B. durch
+//  STATUS: "Über" ist jetzt fertig implementiert (→ AboutScreen).
+//  Die restlichen drei Punkte (Konto, Erscheinungsbild, Speicher)
+//  zeigen weiterhin nur einen Hinweis-SnackBar an. Sobald ein
+//  Bereich fertig implementiert ist, einfach den onTap der
+//  jeweiligen _SettingsCard unten ersetzen – z.B. durch
 //  context.push(AppRoutes.account) (Route dann in app_router.dart
 //  ergänzen) oder direkt durch eine Aktion (z.B. Cache leeren).
+//
+//  ÄNDERUNGEN (Einstellungen-Update):
+//    - "Über"-Karte öffnet jetzt AboutScreen (AppRoutes.about)
+//    - Platzhalter-SnackBar deutlich sichtbarer gemacht (Icon,
+//      fetter weißer Text, farbiger Rahmen statt unauffälligem
+//      dunklem Hintergrund ohne Kontrast – war vorher auf dem
+//      dunklen Verlauf kaum erkennbar)
 //
 //  GEPLANTE BEREICHE:
 //    - Konto             → Account-Verknüpfung, Profil
@@ -18,11 +26,12 @@
 //                           siehe app_theme.dart)
 //    - Speicher           → z.B. Spielername-Cache leeren
 //                           (siehe player_name_repository.dart)
-//    - Über               → App-Version, Credits, Links
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
+import '../core/app_router.dart';
 import '../widgets/app_background.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -64,9 +73,10 @@ class SettingsScreen extends StatelessWidget {
             _SettingsCard(
               icon: Icons.info_outline,
               title: 'Über',
-              description: 'App-Version & Infos.',
+              description: 'App-Version, Links & Credits.',
               color: AppColors.info,
-              onTap: () => _showPlaceholder(context),
+              // ✅ "Über" ist fertig implementiert → eigener Screen
+              onTap: () => context.push(AppRoutes.about),
             ),
           ],
         ),
@@ -78,11 +88,27 @@ class SettingsScreen extends StatelessWidget {
   // jeweiligen onTap der _SettingsCard oben ersetzen.
   void _showPlaceholder(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Diese Funktion ist noch nicht verfügbar.'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.construction_rounded, color: AppColors.warning, size: 20),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Diese Funktion ist noch nicht verfügbar.',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
         backgroundColor: AppColors.darkCardElevated,
         behavior: SnackBarBehavior.floating,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: AppColors.warning.withOpacity(0.35)),
+        ),
       ),
     );
   }
