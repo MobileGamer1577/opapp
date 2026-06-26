@@ -49,6 +49,16 @@ class ApiConstants {
   static const String websiteUrl = 'https://opsucht.net';
   static const String rulesUrl   = 'https://wiki.opsucht.net/regelwerk/';
 
+  // ── Über-Screen: Entwickler-Links ──────────────────────────
+  static const String bioUrl     = 'https://guns.lol/mobilegamer1577';
+  static const String discordUrl = 'https://discord.gg/6zaJXKDqN4';
+  static const String githubUrl  = 'https://github.com/MobileGamer1577/opapp';
+
+  // ── Über-Screen: Credits (Datenquellen) ────────────────────
+  // baseUrl, websiteUrl & rulesUrl sind oben bereits definiert
+  // und werden im Credits-Bereich des Über-Screens wiederverwendet.
+  static const String mcApiCreditUrl = 'https://mc-api.io';
+
   // ── Auto-Refresh Intervalle ───────────────────────────────
   static const Duration auctionRefreshInterval = Duration(seconds: 30);
   static const Duration ratesRefreshInterval   = Duration(minutes: 5);
