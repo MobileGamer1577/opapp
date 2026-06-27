@@ -1,0 +1,56 @@
+# ═══════════════════════════════════════════════════════════════
+#  deploy-web.yml – Baut die Flutter-Web-Version und deployed sie
+#                    automatisch nach Cloudflare Pages
+#
+#  ✅ HIER ÄNDERN: flutter-version anpassen, falls du upgradest
+#  ✅ HIER ÄNDERN: --project-name unten anpassen, falls dein
+#                  Cloudflare-Pages-Projekt anders heißt als "opapp"
+#  ❌ NICHT ÄNDERN: Secret-Namen (müssen exakt so in GitHub hinterlegt sein)
+#
+#  TRIGGER:
+#    push:              Jeder Push auf main baut & deployed automatisch.
+#                        Entfernen, falls du wie bei den iOS-Builds
+#                        lieber volle manuelle Kontrolle willst.
+#    workflow_dispatch:  Erlaubt zusätzlich den manuellen Start über
+#                        den "Run workflow"-Button in GitHub Actions.
+#
+#  VORAUSSETZUNG (siehe Anleitung):
+#    Repository Secrets CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID
+#    müssen unter Settings → Secrets and variables → Actions angelegt sein.
+# ═══════════════════════════════════════════════════════════════
+
+name: Deploy Web zu Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Flutter installieren
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.0'
+          channel: 'stable'
+
+      - name: Dependencies installieren
+        run: flutter pub get
+
+      - name: Web-Build erstellen
+        run: flutter build web --release --pwa-strategy=none
+
+      - name: Nach Cloudflare Pages deployen
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name=opapp

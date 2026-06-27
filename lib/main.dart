@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,10 +17,14 @@ void main() async {
   );
 
   // Nur Portrait-Modus (kann später erweitert werden)
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // ✅ Web-Kompatibilität: kIsWeb-Check, da setPreferredOrientations()
+  // im Browser ohnehin keine Wirkung hat (kein Fehler, aber unnötig).
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   runApp(
     // ProviderScope ist das Root-Widget für Riverpod

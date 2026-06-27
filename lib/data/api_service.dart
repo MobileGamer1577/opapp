@@ -1,6 +1,22 @@
+// ═══════════════════════════════════════════════════════════════
+//  api_service.dart – zentrale HTTP-Kommunikation
+//
+//  ✅ HIER ÄNDERN: Timeouts, Header
+//  ❌ NICHT ÄNDERN: ApiException-Hierarchie / toString()-Override
+//
+//  ÄNDERUNGEN (Web-Kompatibilität):
+//    - dart:io entfernt (SocketException) – existiert auf Flutter
+//      Web nicht. Vorher konnte die Datei für Web gar nicht erst
+//      kompiliert werden (Compile-Error, kein Laufzeitfehler!).
+//    - SocketException-Catch durch http.ClientException ersetzt.
+//      Das deckt auf Mobile weiterhin "kein Internet" ab, UND fängt
+//      im Web zusätzlich CORS-Blockaden ab (der Browser verweigert
+//      dann den Zugriff auf die Antwort, bevor wir den Statuscode
+//      sehen – kommt als ClientException an, nicht als HTTP-Fehler).
+// ═══════════════════════════════════════════════════════════════
+
 import 'dart:async' as async;
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../core/api_constants.dart';
 
@@ -58,9 +74,9 @@ class ApiService {
       } else {
         throw ServerException(response.statusCode);
       }
-    } on SocketException {
-      throw const NetworkException();
     } on http.ClientException {
+      // Mobile: kein Internet / DNS-Fehler.
+      // Web:    deckt zusätzlich CORS-Blockaden ab.
       throw const NetworkException();
     } on async.TimeoutException {
       throw const TimeoutException();
