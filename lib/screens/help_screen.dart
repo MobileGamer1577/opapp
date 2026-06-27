@@ -114,7 +114,7 @@ class _RestrictionsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Vollständige Liste auf der offiziellen Website.',
+            'Vollständige Liste ist bald verfügbar.',
             style: theme.textTheme.bodySmall,
           ),
         ],
