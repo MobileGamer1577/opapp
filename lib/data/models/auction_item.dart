@@ -15,6 +15,15 @@
 //    - endsAt ist nullable (DateTime?)
 //    - isExpired ist nur true wenn Endzeit BEKANNT und vergangen ist
 //    - _parseTimestamp erkennt ISO-String, Unix-Sek, Unix-Ms, Zahl-als-String
+//
+//  ÄNDERUNGEN (Preisformat-Update):
+//    - NEU: hasBid – true wenn tatsächlich (mindestens einmal)
+//      geboten wurde. ANNAHME (nicht als eigenes API-Feld bestätigt):
+//      Ohne Gebote liefert die API currentBid == startBid – die Karte
+//      im Auktionshaus zeigt dann bewusst nur "Startpreis" statt
+//      einer Dopplung von "Gebot" mit demselben Wert (siehe
+//      auctions_screen.dart). Falls die API später ein eigenes Feld
+//      dafür liefert (z.B. "hasBid"/"bidCount"), hier ersetzen.
 // ═══════════════════════════════════════════════════════════════
 
 /// Repräsentiert eine laufende Auktion im OPSUCHT Auktionshaus
@@ -208,4 +217,10 @@ class AuctionItem {
   bool get hasEnchants => enchants.isNotEmpty;
   bool get hasLore     => lore.isNotEmpty;
   bool get hasBuyNow   => buyNowPrice != null;
+
+  /// true wenn tatsächlich (mindestens einmal) geboten wurde.
+  /// ANNAHME: Ohne Gebote liefert die API currentBid == startBid –
+  /// erst wenn currentBid > startBid liegt ein echtes Gebot vor.
+  /// (Kein eigenes API-Feld dafür bekannt – siehe Datei-Kommentar oben.)
+  bool get hasBid => currentBid > startBid;
 }
