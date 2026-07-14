@@ -18,6 +18,20 @@
 //      entfernt. Die Auto-Refresh-Logik selbst (ApiConstants.
 //      auctionRefreshInterval in auction_repository.dart) läuft
 //      unverändert im Hintergrund weiter – nur die Anzeige ist weg.
+//
+//  ÄNDERUNGEN (Preisformat-Update):
+//    - NEU: Solange für eine Auktion kein echtes Gebot vorliegt
+//      (AuctionItem.hasBid == false, siehe auction_item.dart), wird
+//      NIRGENDS mehr "Gebot" angezeigt – weder in der Listen-Karte
+//      noch im Detail-Sheet. Es erscheint dort ausschließlich
+//      "Startpreis". Erst bei einem echten Gebot kommt zusätzlich
+//      "Aktuelles Gebot" (Detail-Sheet) bzw. wechselt das Label in
+//      der Liste auf "Gebot".
+//    - NEU: Alle Preise laufen jetzt über AppFormat.currencyAuto(),
+//      das automatisch Tausenderpunkte/Dezimalkomma ODER die neue
+//      Kurzschreibweise (z.B. "40 Mio. $") verwendet – je nachdem,
+//      was unter Einstellungen → Zahlenformat gewählt wurde
+//      (siehe numberFormatProvider).
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -27,6 +41,7 @@ import '../core/app_colors.dart';
 import '../core/app_format.dart';
 import '../data/repositories/auction_repository.dart';
 import '../data/repositories/player_name_repository.dart';
+import '../data/repositories/number_format_repository.dart';
 import '../data/models/auction_item.dart';
 import '../data/models/auction_category.dart';
 import '../widgets/app_background.dart';
@@ -381,7 +396,7 @@ class _SubChip extends StatelessWidget {
 }
 
 // ─── Auktions-Karte ──────────────────────────────────────────
-// ConsumerWidget wegen playerNameProvider
+// ConsumerWidget wegen playerNameProvider + numberFormatProvider
 
 class _AuctionCard extends ConsumerWidget {
   final AuctionItem item;
@@ -409,6 +424,9 @@ class _AuctionCard extends ConsumerWidget {
       loading: () => 'Lädt\u2026',
       error:   (_, __) => 'Unbekannt',
     );
+
+    // Standard- oder Kurzschreibweise (Einstellungen → Zahlenformat)
+    final formatMode = ref.watch(numberFormatProvider);
 
     return Card(
       child: InkWell(
@@ -452,13 +470,21 @@ class _AuctionCard extends ConsumerWidget {
               // ─ Preise
               Row(
                 children: [
-                  // Aktuelles Gebot
+                  // Startpreis, solange kein echtes Gebot vorliegt –
+                  // erst danach wechselt Label + Wert auf "Gebot"
+                  // (siehe AuctionItem.hasBid)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Gebot', style: theme.textTheme.bodySmall),
                       Text(
-                        AppFormat.currency(item.currentBid),
+                        item.hasBid ? 'Gebot' : 'Startpreis',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      Text(
+                        AppFormat.currencyAuto(
+                          item.hasBid ? item.currentBid : item.startBid,
+                          mode: formatMode,
+                        ),
                         style: const TextStyle(
                           color: AppColors.accent,
                           fontWeight: FontWeight.w700,
@@ -474,7 +500,7 @@ class _AuctionCard extends ConsumerWidget {
                       children: [
                         Text('Sofort-Kauf', style: theme.textTheme.bodySmall),
                         Text(
-                          AppFormat.currency(item.buyNowPrice!),
+                          AppFormat.currencyAuto(item.buyNowPrice!, mode: formatMode),
                           style: const TextStyle(
                             color: AppColors.gold,
                             fontWeight: FontWeight.w600,
@@ -587,6 +613,9 @@ class _AuctionDetailSheet extends ConsumerWidget {
       error:   (_, __) => 'Unbekannt',
     );
 
+    // Standard- oder Kurzschreibweise (Einstellungen → Zahlenformat)
+    final formatMode = ref.watch(numberFormatProvider);
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -674,6 +703,11 @@ class _AuctionDetailSheet extends ConsumerWidget {
             const SizedBox(height: 22),
 
             // ─ Preise ──────────────────────────────────────
+            // Solange kein echtes Gebot vorliegt (currentBid == startBid,
+            // siehe AuctionItem.hasBid), wird NUR der Startpreis gezeigt –
+            // eine zweite Box "Gebot" mit demselben Wert wäre nur eine
+            // Dopplung. Erst bei einem echten Gebot kommt die Box
+            // "Aktuelles Gebot" mit dazu.
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -681,17 +715,23 @@ class _AuctionDetailSheet extends ConsumerWidget {
                   child: _PriceBox(
                     label: 'Startpreis',
                     price: item.startBid,
-                    color: AppColors.darkTextSecondary,
+                    color: item.hasBid
+                        ? AppColors.darkTextSecondary
+                        : AppColors.accent,
+                    mode: formatMode,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _PriceBox(
-                    label: 'Gebot',
-                    price: item.currentBid,
-                    color: AppColors.accent,
+                if (item.hasBid) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PriceBox(
+                      label: 'Aktuelles Gebot',
+                      price: item.currentBid,
+                      color: AppColors.accent,
+                      mode: formatMode,
+                    ),
                   ),
-                ),
+                ],
                 if (item.hasBuyNow) ...[
                   const SizedBox(width: 8),
                   Expanded(
@@ -699,6 +739,7 @@ class _AuctionDetailSheet extends ConsumerWidget {
                       label: 'Sofort-Kauf',
                       price: item.buyNowPrice!,
                       color: AppColors.gold,
+                      mode: formatMode,
                     ),
                   ),
                 ],
@@ -789,10 +830,12 @@ class _PriceBox extends StatelessWidget {
   final String label;
   final double price;
   final Color color;
+  final NumberFormatMode mode;
   const _PriceBox({
     required this.label,
     required this.price,
     required this.color,
+    required this.mode,
   });
 
   @override
@@ -811,7 +854,7 @@ class _PriceBox extends StatelessWidget {
           Text(label, style: theme.textTheme.bodySmall),
           const SizedBox(height: 4),
           Text(
-            AppFormat.currency(price),
+            AppFormat.currencyAuto(price, mode: mode),
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w700,
