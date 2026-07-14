@@ -63,3 +63,4 @@ lib/data/models/_TEMPLATE_model.dart
 lib/data/repositories/_TEMPLATE_repository.dart
 lib/screens/_TEMPLATE_screen.dart
 devtools_options.yaml
+RELEASE_NOTES100.md
