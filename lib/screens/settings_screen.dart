@@ -5,11 +5,11 @@
 //  ✅ HIER ÄNDERN: Neue Einstellungs-Karten hinzufügen
 //  ❌ NICHT ÄNDERN: Card-/Listenaufbau (_SettingsCard)
 //
-//  STATUS: "Über" ist jetzt fertig implementiert (→ AboutScreen).
-//  Die restlichen drei Punkte (Konto, Erscheinungsbild, Speicher)
-//  zeigen weiterhin nur einen Hinweis-SnackBar an. Sobald ein
-//  Bereich fertig implementiert ist, einfach den onTap der
-//  jeweiligen _SettingsCard unten ersetzen – z.B. durch
+//  STATUS: "Über" und "Zahlenformat" sind fertig implementiert.
+//  Die restlichen zwei Punkte (Konto, Erscheinungsbild) zeigen
+//  weiterhin nur einen Hinweis-SnackBar an. Sobald ein Bereich
+//  fertig implementiert ist, einfach den onTap der jeweiligen
+//  _SettingsCard unten ersetzen – z.B. durch
 //  context.push(AppRoutes.account) (Route dann in app_router.dart
 //  ergänzen) oder direkt durch eine Aktion (z.B. Cache leeren).
 //
@@ -20,6 +20,16 @@
 //      dunklem Hintergrund ohne Kontrast – war vorher auf dem
 //      dunklen Verlauf kaum erkennbar)
 //
+//  ÄNDERUNGEN (Preisformat-Update):
+//    - NEU: Karte "Zahlenformat" – öffnet ein Auswahl-Sheet mit
+//      "Standard" (40.000.000 $) und "Kurzschreibweise" (40 Mio. $).
+//      Die Auswahl steuert numberFormatProvider und wird dauerhaft
+//      gespeichert (siehe number_format_repository.dart). Aktuell
+//      wird der gewählte Modus im Auktionshaus verwendet
+//      (AppFormat.currencyAuto() in auctions_screen.dart).
+//    - Screen ist jetzt ein ConsumerWidget (Beschreibungstext der
+//      neuen Karte zeigt den aktuell aktiven Modus an)
+//
 //  GEPLANTE BEREICHE:
 //    - Konto             → Account-Verknüpfung, Profil
 //    - Erscheinungsbild   → Theme/Farben (App ist aktuell Dark-Mode-only,
@@ -29,16 +39,21 @@
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
+import '../core/app_format.dart';
 import '../core/app_router.dart';
+import '../data/repositories/number_format_repository.dart';
 import '../widgets/app_background.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formatMode = ref.watch(numberFormatProvider);
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -62,6 +77,17 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => _showPlaceholder(context),
             ),
             const SizedBox(height: 12),
+            // ✅ "Zahlenformat" ist fertig implementiert.
+            _SettingsCard(
+              icon: Icons.numbers_rounded,
+              title: 'Zahlenformat',
+              description: formatMode == NumberFormatMode.compact
+                  ? 'Kurzschreibweise – z.B. 40 Mio. \$'
+                  : 'Standard – z.B. 40.000.000 \$',
+              color: AppColors.silver,
+              onTap: () => _showFormatSheet(context),
+            ),
+            const SizedBox(height: 12),
             _SettingsCard(
               icon: Icons.storage_outlined,
               title: 'Speicher',
@@ -81,6 +107,17 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showFormatSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _NumberFormatSheet(),
     );
   }
 
@@ -164,6 +201,140 @@ class _SettingsCard extends StatelessWidget {
                   color: theme.textTheme.bodySmall?.color),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Zahlenformat-Auswahl (Bottom-Sheet) ─────────────────────
+// ✅ HIER ÄNDERN: Weitere Modi ergänzen, falls später gewünscht
+// (z.B. eine dritte Stufe für Milliarden).
+
+class _NumberFormatSheet extends ConsumerWidget {
+  const _NumberFormatSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(numberFormatProvider);
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag-Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 18),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text('Zahlenformat', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            'Wie sollen Preise in der App angezeigt werden?',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 18),
+
+          _FormatOptionTile(
+            title: 'Standard',
+            example: AppFormat.currency(40000000),
+            selected: current == NumberFormatMode.standard,
+            onTap: () {
+              ref
+                  .read(numberFormatProvider.notifier)
+                  .setMode(NumberFormatMode.standard);
+              Navigator.pop(context);
+            },
+          ),
+          const SizedBox(height: 10),
+          _FormatOptionTile(
+            title: 'Kurzschreibweise',
+            example: AppFormat.compactCurrency(40000000),
+            selected: current == NumberFormatMode.compact,
+            onTap: () {
+              ref
+                  .read(numberFormatProvider.notifier)
+                  .setMode(NumberFormatMode.compact);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormatOptionTile extends StatelessWidget {
+  final String title;
+  final String example;
+  final bool selected;
+  final VoidCallback onTap;
+  const _FormatOptionTile({
+    required this.title,
+    required this.example,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.accent.withOpacity(0.14)
+              : AppColors.darkCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? AppColors.accent.withOpacity(0.5)
+                : Colors.white.withOpacity(0.07),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.accent : AppColors.darkTextHint,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: selected ? AppColors.accentLight : Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'z.B. $example',
+                    style: const TextStyle(
+                      color: AppColors.darkTextHint,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
