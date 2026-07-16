@@ -5,9 +5,9 @@
 //  ✅ HIER ÄNDERN: Neue Einstellungs-Karten hinzufügen
 //  ❌ NICHT ÄNDERN: Card-/Listenaufbau (_SettingsCard)
 //
-//  STATUS: "Über" und "Zahlenformat" sind fertig implementiert.
-//  Die restlichen zwei Punkte (Konto, Erscheinungsbild) zeigen
-//  weiterhin nur einen Hinweis-SnackBar an. Sobald ein Bereich
+//  STATUS: "Über" und "Erscheinungsbild" (inkl. Zahlenformat) sind
+//  fertig implementiert. Die restlichen zwei Punkte (Konto, Speicher)
+//  zeigen weiterhin nur einen Hinweis-SnackBar an. Sobald ein Bereich
 //  fertig implementiert ist, einfach den onTap der jeweiligen
 //  _SettingsCard unten ersetzen – z.B. durch
 //  context.push(AppRoutes.account) (Route dann in app_router.dart
@@ -21,21 +21,26 @@
 //      dunklen Verlauf kaum erkennbar)
 //
 //  ÄNDERUNGEN (Preisformat-Update):
-//    - NEU: Karte "Zahlenformat" – öffnet ein Auswahl-Sheet mit
-//      "Standard" (40.000.000 $) und "Kurzschreibweise" (40 Mio. $).
-//      Die Auswahl steuert numberFormatProvider und wird dauerhaft
-//      gespeichert (siehe number_format_repository.dart). Aktuell
-//      wird der gewählte Modus im Auktionshaus verwendet
-//      (AppFormat.currencyAuto() in auctions_screen.dart).
-//    - Screen ist jetzt ein ConsumerWidget (Beschreibungstext der
-//      neuen Karte zeigt den aktuell aktiven Modus an)
+//    - NEU (historisch): Eigene Karte "Zahlenformat" mit Auswahl-Sheet
+//      "Standard" / "Kurzschreibweise" – seit dem Erscheinungsbild-
+//      Update unten in "Erscheinungsbild" verschoben, siehe nächster
+//      Eintrag.
 //
-//  GEPLANTE BEREICHE:
-//    - Konto             → Account-Verknüpfung, Profil
-//    - Erscheinungsbild   → Theme/Farben (App ist aktuell Dark-Mode-only,
-//                           siehe app_theme.dart)
-//    - Speicher           → z.B. Spielername-Cache leeren
-//                           (siehe player_name_repository.dart)
+//  ÄNDERUNGEN (Erscheinungsbild-Update):
+//    - Die eigenständige Karte "Zahlenformat" wurde ENTFERNT. Kein
+//      eigener Menüpunkt mehr im Hauptmenü – inhaltlich sind Design
+//      und Zahlendarstellung beides Anzeige-Einstellungen und gehören
+//      zusammen.
+//    - Das Zahlenformat ist jetzt Teil der Karte "Erscheinungsbild"
+//      (_AppearanceSheet). Die Karten-Beschreibung zeigt weiterhin
+//      den aktuell aktiven Modus an.
+//    - Umbenennung: "Kurzschreibweise" → "Kompakte Zahlen" (klarerer,
+//      verständlicherer Begriff für dieselbe Funktion – gleiche Logik,
+//      nur der Anzeigetext hat sich geändert).
+//    - Das Auswahl-Sheet heißt jetzt "Erscheinungsbild" mit dem
+//      Unterabschnitt "ZAHLENFORMAT" – so ist im selben Sheet Platz
+//      für künftige echte Erscheinungsbild-Optionen (z.B. Akzentfarbe),
+//      ohne nochmal etwas umbenennen zu müssen.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -69,23 +74,17 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _showPlaceholder(context),
             ),
             const SizedBox(height: 12),
+            // ✅ "Erscheinungsbild" ist fertig implementiert – enthält
+            // jetzt auch das Zahlenformat (siehe _AppearanceSheet unten).
+            // Beschreibung zeigt live den aktuell aktiven Modus an.
             _SettingsCard(
               icon: Icons.palette_outlined,
               title: 'Erscheinungsbild',
-              description: 'Design & Farben der App.',
-              color: AppColors.sectionShards,
-              onTap: () => _showPlaceholder(context),
-            ),
-            const SizedBox(height: 12),
-            // ✅ "Zahlenformat" ist fertig implementiert.
-            _SettingsCard(
-              icon: Icons.numbers_rounded,
-              title: 'Zahlenformat',
               description: formatMode == NumberFormatMode.compact
-                  ? 'Kurzschreibweise – z.B. 40 Mio. \$'
+                  ? 'Kompakte Zahlen – z.B. 40 Mio. \$'
                   : 'Standard – z.B. 40.000.000 \$',
-              color: AppColors.silver,
-              onTap: () => _showFormatSheet(context),
+              color: AppColors.sectionShards,
+              onTap: () => _showAppearanceSheet(context),
             ),
             const SizedBox(height: 12),
             _SettingsCard(
@@ -110,14 +109,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showFormatSheet(BuildContext context) {
+  void _showAppearanceSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _NumberFormatSheet(),
+      builder: (_) => const _AppearanceSheet(),
     );
   }
 
@@ -207,12 +206,13 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-// ─── Zahlenformat-Auswahl (Bottom-Sheet) ─────────────────────
-// ✅ HIER ÄNDERN: Weitere Modi ergänzen, falls später gewünscht
-// (z.B. eine dritte Stufe für Milliarden).
+// ─── Erscheinungsbild-Sheet (enthält aktuell das Zahlenformat) ──
+// ✅ HIER ÄNDERN: Weitere Erscheinungsbild-Optionen (z.B. Akzentfarbe)
+// können hier als weiterer Abschnitt unterhalb von "ZAHLENFORMAT"
+// ergänzt werden (gleiches Muster: Label + Options-Tiles).
 
-class _NumberFormatSheet extends ConsumerWidget {
-  const _NumberFormatSheet();
+class _AppearanceSheet extends ConsumerWidget {
+  const _AppearanceSheet();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -237,13 +237,30 @@ class _NumberFormatSheet extends ConsumerWidget {
               ),
             ),
           ),
-          Text('Zahlenformat', style: theme.textTheme.titleLarge),
+          Text('Erscheinungsbild', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            'Design & Zahlendarstellung der App.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 20),
+
+          // ── Abschnitt: Zahlenformat ──────────────────────
+          const Text(
+            'ZAHLENFORMAT',
+            style: TextStyle(
+              color: AppColors.accentLight,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             'Wie sollen Preise in der App angezeigt werden?',
-            style: theme.textTheme.bodyMedium,
+            style: theme.textTheme.bodySmall,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
 
           _FormatOptionTile(
             title: 'Standard',
@@ -258,7 +275,7 @@ class _NumberFormatSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           _FormatOptionTile(
-            title: 'Kurzschreibweise',
+            title: 'Kompakte Zahlen',
             example: AppFormat.compactCurrency(40000000),
             selected: current == NumberFormatMode.compact,
             onTap: () {
