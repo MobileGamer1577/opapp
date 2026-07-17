@@ -18,6 +18,13 @@
 //
 //  "base" = Kurs bei neutralem Stand, "exchangeRate" = aktueller Kurs.
 //  changePercent zeigt die Abweichung der beiden zueinander.
+//
+//  ÄNDERUNGEN (Allzeithoch-Update):
+//    - NEU: athKey – stabiler Schlüssel für den Abgleich mit dem
+//      opapp-shards-api Backend (Allzeithoch-Tracking). MUSS exakt
+//      mit extractItemKey() in worker.js übereinstimmen (gleiches
+//      Prinzip: Material-ID bei normalen Items, extrahierter
+//      Anzeigename bei Custom-Items) – siehe dortiger Kommentar.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -136,6 +143,12 @@ class ShardItem {
   double get changePercent => base > 0 ? (rate - base) / base : 0.0;
   bool get isAboveBase => rate > base;
   bool get isBelowBase => rate < base;
+
+  /// Stabiler Schlüssel für den Abgleich mit dem opapp-shards-api
+  /// Allzeithoch-Backend: bei normalen Items die Material-ID, bei
+  /// Custom-Items der Anzeigename. MUSS mit extractItemKey() in
+  /// worker.js übereinstimmen (siehe opapp-shards-api Repo)!
+  String get athKey => material.isNotEmpty ? material : displayName;
 
   static String _fmt(double v) =>
       v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
