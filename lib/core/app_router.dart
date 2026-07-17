@@ -17,6 +17,13 @@
 //  ÄNDERUNGEN (Einstellungen-Update):
 //    - Neue Route AppRoutes.about → AboutScreen
 //      (erreichbar über die "Über"-Karte im Einstellungen-Screen)
+//
+//  ÄNDERUNGEN (Screen-Update):
+//    - Neue Route AppRoutes.appearance → AppearanceScreen
+//      (ersetzt das bisherige Erscheinungsbild-Bottom-Sheet)
+//    - Neue Route AppRoutes.serviceStatus → ServiceStatusScreen
+//      (erreichbar über die "Dienstverfügbarkeit"-Karte, vormals
+//      "Speicher", im Einstellungen-Screen)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +37,8 @@ import '../screens/help_screen.dart';
 import '../screens/commands_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/appearance_screen.dart';
+import '../screens/service_status_screen.dart';
 // ← Neue Screen-Imports hier hinzufügen
 
 // ── Route-Namen als Konstanten ────────────────────────────────
@@ -42,6 +51,8 @@ abstract class AppRoutes {
   static const commands = '/commands';
   static const settings = '/settings';
   static const about = '/about';
+  static const appearance = '/appearance';
+  static const serviceStatus = '/service-status';
   // ← Neue Route hier ergänzen
 }
 
@@ -84,6 +95,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.about,
         builder: (_, __) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.appearance,
+        builder: (_, __) => const AppearanceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.serviceStatus,
+        builder: (_, __) => const ServiceStatusScreen(),
       ),
       // ← Neue GoRoute hier ergänzen, z.B.:
       // GoRoute(
