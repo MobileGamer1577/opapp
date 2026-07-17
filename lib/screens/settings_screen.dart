@@ -5,49 +5,37 @@
 //  ✅ HIER ÄNDERN: Neue Einstellungs-Karten hinzufügen
 //  ❌ NICHT ÄNDERN: Card-/Listenaufbau (_SettingsCard)
 //
-//  STATUS: "Über" und "Erscheinungsbild" (inkl. Zahlenformat) sind
-//  fertig implementiert. Die restlichen zwei Punkte (Konto, Speicher)
-//  zeigen weiterhin nur einen Hinweis-SnackBar an. Sobald ein Bereich
-//  fertig implementiert ist, einfach den onTap der jeweiligen
-//  _SettingsCard unten ersetzen – z.B. durch
+//  STATUS: "Über", "Erscheinungsbild" und "Dienstverfügbarkeit" sind
+//  fertig implementiert. "Konto" zeigt weiterhin nur einen Hinweis-
+//  SnackBar an. Sobald ein Bereich fertig implementiert ist, einfach
+//  den onTap der jeweiligen _SettingsCard unten ersetzen – z.B. durch
 //  context.push(AppRoutes.account) (Route dann in app_router.dart
-//  ergänzen) oder direkt durch eine Aktion (z.B. Cache leeren).
+//  ergänzen) oder direkt durch eine Aktion.
 //
 //  ÄNDERUNGEN (Einstellungen-Update):
-//    - "Über"-Karte öffnet jetzt AboutScreen (AppRoutes.about)
-//    - Platzhalter-SnackBar deutlich sichtbarer gemacht (Icon,
-//      fetter weißer Text, farbiger Rahmen statt unauffälligem
-//      dunklem Hintergrund ohne Kontrast – war vorher auf dem
-//      dunklen Verlauf kaum erkennbar)
+//    - "Über"-Karte öffnet AboutScreen (AppRoutes.about)
+//    - Platzhalter-SnackBar deutlich sichtbarer gemacht
 //
-//  ÄNDERUNGEN (Preisformat-Update):
-//    - NEU (historisch): Eigene Karte "Zahlenformat" mit Auswahl-Sheet
-//      "Standard" / "Kurzschreibweise" – seit dem Erscheinungsbild-
-//      Update unten in "Erscheinungsbild" verschoben, siehe nächster
-//      Eintrag.
+//  ÄNDERUNGEN (Erscheinungsbild-Update, historisch):
+//    - "Zahlenformat" war eigene Karte, dann Teil eines Bottom-Sheets
+//      unter "Erscheinungsbild" – siehe nächster Eintrag, warum sich
+//      das nochmal geändert hat.
 //
-//  ÄNDERUNGEN (Erscheinungsbild-Update):
-//    - Die eigenständige Karte "Zahlenformat" wurde ENTFERNT. Kein
-//      eigener Menüpunkt mehr im Hauptmenü – inhaltlich sind Design
-//      und Zahlendarstellung beides Anzeige-Einstellungen und gehören
-//      zusammen.
-//    - Das Zahlenformat ist jetzt Teil der Karte "Erscheinungsbild"
-//      (_AppearanceSheet). Die Karten-Beschreibung zeigt weiterhin
-//      den aktuell aktiven Modus an.
-//    - Umbenennung: "Kurzschreibweise" → "Kompakte Zahlen" (klarerer,
-//      verständlicherer Begriff für dieselbe Funktion – gleiche Logik,
-//      nur der Anzeigetext hat sich geändert).
-//    - Das Auswahl-Sheet heißt jetzt "Erscheinungsbild" mit dem
-//      Unterabschnitt "ZAHLENFORMAT" – so ist im selben Sheet Platz
-//      für künftige echte Erscheinungsbild-Optionen (z.B. Akzentfarbe),
-//      ohne nochmal etwas umbenennen zu müssen.
+//  ÄNDERUNGEN (Screen-Update):
+//    - "Erscheinungsbild" ist jetzt ein EIGENER SCREEN
+//      (AppRoutes.appearance, siehe appearance_screen.dart) statt
+//      eines Bottom-Sheets – mehr Platz für künftige Optionen, gleiches
+//      Karten-Gruppen-Muster wie "Über".
+//    - "Speicher" wurde zu "Dienstverfügbarkeit" (AppRoutes.
+//      serviceStatus, siehe service_status_screen.dart) – zeigt den
+//      Live-Status (Online/Offline + Ping) aller von der App
+//      genutzten APIs (OPSUCHT, mc-api.io, eigenes Shards-Backend).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
-import '../core/app_format.dart';
 import '../core/app_router.dart';
 import '../data/repositories/number_format_repository.dart';
 import '../widgets/app_background.dart';
@@ -74,9 +62,8 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _showPlaceholder(context),
             ),
             const SizedBox(height: 12),
-            // ✅ "Erscheinungsbild" ist fertig implementiert – enthält
-            // jetzt auch das Zahlenformat (siehe _AppearanceSheet unten).
-            // Beschreibung zeigt live den aktuell aktiven Modus an.
+            // ✅ Eigener Screen – Beschreibung zeigt live den aktuell
+            // aktiven Zahlenformat-Modus an.
             _SettingsCard(
               icon: Icons.palette_outlined,
               title: 'Erscheinungsbild',
@@ -84,15 +71,17 @@ class SettingsScreen extends ConsumerWidget {
                   ? 'Kompakte Zahlen – z.B. 40 Mio. \$'
                   : 'Standard – z.B. 40.000.000 \$',
               color: AppColors.sectionShards,
-              onTap: () => _showAppearanceSheet(context),
+              onTap: () => context.push(AppRoutes.appearance),
             ),
             const SizedBox(height: 12),
+            // ✅ "Speicher" → "Dienstverfügbarkeit": Live-Status +
+            // Ping aller von der App genutzten APIs.
             _SettingsCard(
-              icon: Icons.storage_outlined,
-              title: 'Speicher',
-              description: 'Cache & lokale Daten verwalten.',
+              icon: Icons.network_check_rounded,
+              title: 'Dienstverfügbarkeit',
+              description: 'Status & Ping aller genutzten APIs.',
               color: AppColors.warning,
-              onTap: () => _showPlaceholder(context),
+              onTap: () => context.push(AppRoutes.serviceStatus),
             ),
             const SizedBox(height: 12),
             _SettingsCard(
@@ -100,23 +89,11 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Über',
               description: 'App-Version, Links & Credits.',
               color: AppColors.info,
-              // ✅ "Über" ist fertig implementiert → eigener Screen
               onTap: () => context.push(AppRoutes.about),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  void _showAppearanceSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const _AppearanceSheet(),
     );
   }
 
@@ -200,158 +177,6 @@ class _SettingsCard extends StatelessWidget {
                   color: theme.textTheme.bodySmall?.color),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Erscheinungsbild-Sheet (enthält aktuell das Zahlenformat) ──
-// ✅ HIER ÄNDERN: Weitere Erscheinungsbild-Optionen (z.B. Akzentfarbe)
-// können hier als weiterer Abschnitt unterhalb von "ZAHLENFORMAT"
-// ergänzt werden (gleiches Muster: Label + Options-Tiles).
-
-class _AppearanceSheet extends ConsumerWidget {
-  const _AppearanceSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(numberFormatProvider);
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag-Handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 18),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Text('Erscheinungsbild', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 4),
-          Text(
-            'Design & Zahlendarstellung der App.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 20),
-
-          // ── Abschnitt: Zahlenformat ──────────────────────
-          const Text(
-            'ZAHLENFORMAT',
-            style: TextStyle(
-              color: AppColors.accentLight,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Wie sollen Preise in der App angezeigt werden?',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-
-          _FormatOptionTile(
-            title: 'Standard',
-            example: AppFormat.currency(40000000),
-            selected: current == NumberFormatMode.standard,
-            onTap: () {
-              ref
-                  .read(numberFormatProvider.notifier)
-                  .setMode(NumberFormatMode.standard);
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 10),
-          _FormatOptionTile(
-            title: 'Kompakte Zahlen',
-            example: AppFormat.compactCurrency(40000000),
-            selected: current == NumberFormatMode.compact,
-            onTap: () {
-              ref
-                  .read(numberFormatProvider.notifier)
-                  .setMode(NumberFormatMode.compact);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FormatOptionTile extends StatelessWidget {
-  final String title;
-  final String example;
-  final bool selected;
-  final VoidCallback onTap;
-  const _FormatOptionTile({
-    required this.title,
-    required this.example,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.accent.withOpacity(0.14)
-              : AppColors.darkCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? AppColors.accent.withOpacity(0.5)
-                : Colors.white.withOpacity(0.07),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? AppColors.accent : AppColors.darkTextHint,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: selected ? AppColors.accentLight : Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'z.B. $example',
-                    style: const TextStyle(
-                      color: AppColors.darkTextHint,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
