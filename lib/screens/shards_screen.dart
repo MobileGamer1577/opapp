@@ -313,14 +313,14 @@ class _ShardDetailSheet extends ConsumerWidget {
               final ath = map[item.athKey];
               if (ath == null) {
                 return const _ShardStatBox(
-                  label:    'Allzeithoch',
+                  label:    'Höchster Kurs',
                   value:    'Noch keine Daten',
                   sublabel: 'Wird ab jetzt automatisch erfasst',
                   color:    AppColors.darkTextSecondary,
                 );
               }
               return _ShardStatBox(
-                label:    'Allzeithoch',
+                label:    'Höchster Kurs',
                 value:    ath.displayRate,
                 sublabel: '${ath.displayChange} über Basis · ${AppFormat.dateTime(ath.achievedAt.toLocal())}',
                 color:    AppColors.gold,
@@ -328,7 +328,7 @@ class _ShardDetailSheet extends ConsumerWidget {
             },
             loading: () => const _ShardStatBoxLoading(),
             error: (_, __) => const _ShardStatBox(
-              label:    'Allzeithoch',
+              label:    'Höchster Kurs',
               value:    'Nicht verfügbar',
               sublabel: 'Verbindung zur Historie fehlgeschlagen',
               color:    AppColors.darkTextSecondary,
