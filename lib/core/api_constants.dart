@@ -12,6 +12,13 @@
 //    /auctions/active     → alle aktiven Auktionen (mit Enchants & Lore)
 //    /auctions/categories → Auktions-Kategorien
 //    /merchant/rates      → OPShard Wechselkurse
+//
+//  ÄNDERUNGEN (Allzeithoch-Update):
+//    - NEU: eigenes Backend "opapp-shards-api" (Cloudflare Worker + D1,
+//      separates Repo) – trackt Allzeithoch & Kursverlauf der OPShards-
+//      Wechselkurse, da die offizielle OPSUCHT-API selbst keine
+//      Historie liefert. Läuft komplett unabhängig im Hintergrund
+//      (Cron-Job alle 15 Min.), die App liest hier NUR (GET).
 // ═══════════════════════════════════════════════════════════════
 
 class ApiConstants {
@@ -37,6 +44,20 @@ class ApiConstants {
 
   // ── Merchant / OPShards ───────────────────────────────────
   static const String merchantRates = '$baseUrl/merchant/rates';
+
+  // ── OPAPP Shards-API (eigenes Backend, Cloudflare Worker + D1) ──
+  // Separates Repo "opapp-shards-api". Pollt selbstständig per Cron
+  // die OPSUCHT-API und speichert Allzeithoch + Kursverlauf – die App
+  // ruft hier NUR lesend ab, schreibt niemals selbst.
+  static const String _shardsApiBaseUrl = 'https://opapp-shards-api.px32.workers.dev';
+
+  /// GET → Liste aller Allzeithochs, siehe ShardAllTimeHigh.fromJson
+  static const String shardsAth = '$_shardsApiBaseUrl/shards/ath';
+
+  /// GET → Kursverlauf für ein einzelnes Item (für den künftigen Graphen).
+  /// [itemKey] muss mit ShardItem.athKey (shard_rate.dart) übereinstimmen.
+  static String shardsHistory(String itemKey, {int days = 30}) =>
+      '$_shardsApiBaseUrl/shards/history/${Uri.encodeComponent(itemKey)}?days=$days';
 
   // ── Externe Spieler-Namen-API (mc-api.io) ──────────────────
   // Löst eine Verkäufer-UUID in den aktuellen Spielernamen auf.
