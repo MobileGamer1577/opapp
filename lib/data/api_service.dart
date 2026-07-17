@@ -61,13 +61,11 @@ class ApiService {
   /// Wirft [ApiException]-Unterklassen bei Fehlern.
   Future<dynamic> get(String url) async {
     try {
-      final uri      = Uri.parse(url);
-      final response = await _client
-          .get(uri, headers: {
-            'Accept':     'application/json',
-            'User-Agent': 'OPAPP/1.0',
-          })
-          .timeout(ApiConstants.receiveTimeout);
+      final uri = Uri.parse(url);
+      final response = await _client.get(uri, headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'OPAPP/1.0',
+      }).timeout(ApiConstants.receiveTimeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
