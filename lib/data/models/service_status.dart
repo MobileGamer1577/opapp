@@ -4,6 +4,12 @@
 //  ✅ HIER ÄNDERN: Felder ergänzen (z.B. HTTP-Statuscode separat
 //                  anzeigen, falls später gewünscht)
 //  ❌ NICHT ÄNDERN: Klassenstruktur
+//
+//  ÄNDERUNGEN (Progressiv-Update):
+//    - ServiceGroup entfernt – die Gruppierung läuft jetzt direkt über
+//      endpointGroups in service_status_repository.dart (statische
+//      Struktur, kein gebündeltes Fetch-Ergebnis mehr nötig, da jeder
+//      Endpunkt einzeln und unabhängig geprüft wird).
 // ═══════════════════════════════════════════════════════════════
 
 /// Ergebnis eines einzelnen Erreichbarkeits-Checks.
@@ -21,12 +27,4 @@ class ServiceCheckResult {
     required this.isOnline,
     this.pingMs,
   });
-}
-
-/// Eine Gruppe von Checks (z.B. "Markt-API", "Spieler-API (mc-api.io)").
-class ServiceGroup {
-  final String label;
-  final List<ServiceCheckResult> services;
-
-  const ServiceGroup({required this.label, required this.services});
 }
