@@ -36,6 +36,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
+import '../core/app_format.dart';
 import '../core/app_router.dart';
 import '../data/repositories/number_format_repository.dart';
 import '../widgets/app_background.dart';
