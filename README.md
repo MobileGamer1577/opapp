@@ -1,48 +1,36 @@
-# OPAPP – Companion App für OPSUCHT.NET
+# OPAPP – Die Companion App für OPSUCHT.NET
 
-Eine moderne Flutter Companion-App für den **OPSUCHT.NET** Minecraft Citybuild Server.
+Eine moderne, performante Companion-App für den Minecraft Citybuild Server **OPSUCHT.NET**. Behalte die Wirtschaft des Servers immer im Blick – egal ob Marktpreise, Auktionshaus oder OPShard-Kurse.
 
 ---
 
-## 📱 Download
+## 📱 Features
 
-> Alle Releases findest du im **[Releases-Bereich](../../releases)** dieses Repositories.
+Die OPAPP hilft dir, dein Spielerlebnis zu optimieren:
+
+*   **🏪 Markt-Tracking:** Verfolge die aktuellen Preise im In-Game Markt, um schnell und effizient zu verkaufen.
+*   **🔨 Auktionshaus:** Durchsuche live alle aktiven Auktionen, sehe Gebote und Sofortkauf-Preise in Echtzeit.
+*   **💎 OPShards:** Behalte den aktuellen Wechselkurs im Auge.
+*   **❓ Hilfe & Support:** Zugriff auf alle wichtigen Server-Commands, das Regelwerk, Restriktionen und mehr.
+
+---
+
+## 📥 Installation
 
 ### 🤖 Android (APK)
+1. Lade die aktuellste `.apk`-Datei aus dem **[Releases-Bereich](../../releases)** herunter.
+2. Öffne die Datei auf deinem Android-Gerät.
+3. Bestätige bei Bedarf die Installation aus „Unbekannten Quellen“ in deinen Systemeinstellungen.
 
-1. Gehe zu **[Releases](../../releases)** und öffne die neueste Version
-2. Lade die Datei **`opapp-release_VERSION.apk`** herunter
-3. Auf dem Gerät öffnen → bei Bedarf *Unbekannte Quellen* in den Einstellungen erlauben
-4. Installieren – fertig
-
-### 🍎 iOS (iPhone / iPad)
-
-1. Gehe zu **[Releases](../../releases)** und öffne die neueste Version
-2. Lade die Datei **`opapp_VERSION.ipa`** herunter
-3. Installiere [AltStore](https://altstore.io) auf deinem iPhone (kein Jailbreak nötig)
-4. Öffne die IPA-Datei in AltStore und installiere sie
-
-> **Hinweis:** Die iOS-Version ist nicht im App Store verfügbar und wird per Sideloading installiert.
-> AltStore ist kostenlos und erfordert keinen Jailbreak.
+### 🌐 iOS (Web-App)
+Die OPAPP ist für iOS als Web-App optimiert. Du kannst sie einfach über deinen Browser aufrufen und als Lesezeichen auf deinem Homescreen speichern, um sie wie eine native App zu nutzen.
+*(Hinweis: Aktuell ist keine native IPA-Installation notwendig/vorgesehen.)*
 
 ---
 
-## ✨ Features
-
-| Bereich | Beschreibung |
-|---------|--------------|
-| 🏠 **Dashboard** | Schnellübersicht – Kurs, Auktionen, Navigation |
-| 🏪 **Markt** | Alle Items mit Kauf-/Verkaufspreisen & Kategoriefilter |
-| 🔨 **Auktionshaus** | Live-Auktionen, alle 30 Sek. aktualisiert, Enchants & Lore |
-| 💎 **OPShards** | Aktueller Wechselkurs des Händlers |
-| ❓ **Hilfe** | Commands, Regelwerk, Restriktionen & globale Suche |
+> **Disclaimer:** Dies ist ein unabhängiges Community-Projekt und steht in keiner offiziellen Verbindung zum OPSUCHT.net-Server oder dessen Betreibern.
 
 ---
 
 ## 📄 Lizenz
-
 MIT License – siehe [LICENSE](LICENSE)
-
----
-
-> Dieses Projekt ist ein Community-Projekt und steht in keiner offiziellen Verbindung zum OPSUCHT-Server oder dessen Betreibern.
