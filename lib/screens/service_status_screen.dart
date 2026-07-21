@@ -3,20 +3,27 @@
 //
 //  ✅ HIER ÄNDERN: Kartendesign; Endpunkte selbst liegen in
 //                  service_status_repository.dart
-//  ❌ NICHT ÄNDERN: serviceCheckProvider-Aufruf
+//  ❌ NICHT ÄNDERN: serviceStatusControllerProvider-Aufruf
 //
 //  Zeigt für jede von der App genutzte API (OPSUCHT, mc-api.io, das
 //  eigene opapp-shards-api Backend) den Live-Status: Online (mit
 //  Ping in ms) oder Offline. Rein informativ – hat keinen Einfluss
 //  auf die restliche App, falls einzelne Dienste gerade down sind.
 //
-//  ÄNDERUNGEN (Progressiv-Update):
-//    - Die Liste aller Karten steht SOFORT (endpointGroups ist
-//      synchron bekannt) – kein Warten auf einen einzigen großen
-//      Request mehr. Jede Karte (_ServiceCard) beobachtet ihren
-//      EIGENEN serviceCheckProvider(endpoint) und zeigt individuell
-//      "Wird überprüft…" → Online/Offline, sobald ihr Request fertig
-//      ist, unabhängig von den anderen Karten.
+//  ÄNDERUNGEN (Sequenziell-Update):
+//    - Bewusst KEIN Pull-to-Refresh mehr (RefreshIndicator entfernt).
+//    - ListView.builder statt ListView: Karten werden erst gebaut
+//      (und melden sich erst dann beim Controller an), wenn sie
+//      tatsächlich in oder nahe am sichtbaren Bereich sind. Beim
+//      Scrollen kommen neue Karten dazu, bereits geprüfte bleiben im
+//      Cache (siehe service_status_repository.dart) und werden NICHT
+//      erneut angefragt, auch wenn die Karte durch Scrollen weg und
+//      wieder zurück neu gebaut wird.
+//    - Die Reihenfolge der Requests ist strikt sequenziell (siehe
+//      ServiceStatusController._processQueue) – erst wenn eine
+//      Antwort da ist, startet der nächste Request.
+//    - Refresh-Button im AppBar bleibt erhalten (kompletter Neu-Check
+//      aller Endpunkte, auch aktuell nicht sichtbarer).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -30,6 +37,16 @@ class ServiceStatusScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Gruppen + Endpunkte zu einer flachen Liste zusammenfassen –
+    // ListView.builder kennt keine Gruppen, nur Einträge. Ein String-
+    // Eintrag steht für ein Gruppen-Label, ein ServiceEndpoint für
+    // eine Karte.
+    final flatItems = <Object>[];
+    for (final group in endpointGroups) {
+      flatItems.add(group.key);
+      flatItems.addAll(group.value);
+    }
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -38,28 +55,28 @@ class ServiceStatusScreen extends ConsumerWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              // Ohne Argument → invalidiert ALLE aktuell beobachteten
-              // Endpunkt-Provider auf einmal.
-              onPressed: () => ref.invalidate(serviceCheckProvider),
+              onPressed: () =>
+                  ref.read(serviceStatusControllerProvider.notifier).refreshAll(),
             ),
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: () async => ref.invalidate(serviceCheckProvider),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              for (final group in endpointGroups) ...[
-                _GroupLabel(group.key),
-                const SizedBox(height: 10),
-                for (final endpoint in group.value) ...[
-                  _ServiceCard(endpoint: endpoint),
-                  const SizedBox(height: 8),
-                ],
-                const SizedBox(height: 14),
-              ],
-            ],
-          ),
+        // Bewusst KEIN RefreshIndicator – kein Pull-to-Refresh gewünscht.
+        body: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: flatItems.length,
+          itemBuilder: (context, index) {
+            final item = flatItems[index];
+            if (item is String) {
+              return Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 14, bottom: 10),
+                child: _GroupLabel(item),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _ServiceCard(endpoint: item as ServiceEndpoint),
+            );
+          },
         ),
       ),
     );
@@ -89,17 +106,38 @@ class _GroupLabel extends StatelessWidget {
 }
 
 // ─── Einzelne Dienst-Karte ─────────────────────────────────────
-// ConsumerWidget – beobachtet ihren EIGENEN Endpunkt-Provider, damit
-// jede Karte unabhängig von den anderen lädt/aktualisiert.
+// ConsumerStatefulWidget: meldet sich beim ersten Build (initState)
+// beim ServiceStatusController an – der kümmert sich um Reihenfolge
+// + Cache. Wird die Karte durch Scrollen zerstört und später neu
+// gebaut, ist requestCheck() dann ein No-Op (Ergebnis bleibt im
+// Provider gecacht, unabhängig vom Lebenszyklus dieser Karte).
 
-class _ServiceCard extends ConsumerWidget {
+class _ServiceCard extends ConsumerStatefulWidget {
   final ServiceEndpoint endpoint;
   const _ServiceCard({required this.endpoint});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ServiceCard> createState() => _ServiceCardState();
+}
+
+class _ServiceCardState extends ConsumerState<_ServiceCard> {
+  @override
+  void initState() {
+    super.initState();
+    // Nach dem aktuellen Frame anfragen, nicht synchron während des
+    // Builds (sonst wirft Riverpod einen "modify provider while
+    // widget tree is building"-Fehler).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(serviceStatusControllerProvider.notifier).requestCheck(widget.endpoint);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final checkAsync = ref.watch(serviceCheckProvider(endpoint));
+    final result = ref.watch(serviceStatusControllerProvider)[widget.endpoint];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -114,10 +152,10 @@ class _ServiceCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(endpoint.name, style: theme.textTheme.titleMedium),
+                Text(widget.endpoint.name, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 2),
                 Text(
-                  _shortenUrl(endpoint.url),
+                  _shortenUrl(widget.endpoint.url),
                   style: theme.textTheme.bodySmall,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -125,17 +163,12 @@ class _ServiceCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 10),
-          checkAsync.when(
-            data: (result) => _StatusChip(
-              online: result.isOnline,
-              label: result.isOnline ? 'Online (${result.pingMs}ms)' : 'Offline',
-            ),
-            loading: () => const _CheckingChip(),
-            // Ein Fehler im Provider selbst (sollte durch das try/catch
-            // im Repository eigentlich nie passieren) wird sicherheits-
-            // halber wie "Offline" behandelt statt eines Krachs im UI.
-            error: (_, __) => const _StatusChip(online: false, label: 'Offline'),
-          ),
+          result == null
+              ? const _CheckingChip()
+              : _StatusChip(
+                  online: result.isOnline,
+                  label: result.isOnline ? 'Online (${result.pingMs}ms)' : 'Offline',
+                ),
         ],
       ),
     );
