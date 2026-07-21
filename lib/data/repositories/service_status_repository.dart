@@ -5,25 +5,29 @@
 //  ✅ HIER ÄNDERN: endpointGroups – Endpunkte ergänzen/entfernen/
 //                  umbenennen. Test-Werte unten anpassen, falls sich
 //                  die Beispiel-UUID/-XUID ändern sollen.
-//  ❌ NICHT ÄNDERN: Provider-Name serviceCheckProvider
+//  ❌ NICHT ÄNDERN: Provider-Name serviceStatusControllerProvider
 //
-//  ÄNDERUNGEN (Progressiv-Update):
-//    - NEU: Statt EINES großen Requests für alle Endpunkte (der die
-//      ganze Seite hinter einem einzigen Ladespinner blockiert hat)
-//      ist jeder Endpunkt jetzt sein EIGENER Riverpod-Provider
-//      (FutureProvider.family<ServiceCheckResult, ServiceEndpoint>).
-//      Der Screen baut sich dadurch SOFORT auf (endpointGroups ist
-//      eine statische, synchron bekannte Liste) – jede einzelne Karte
-//      zeigt "Wird überprüft…" und wechselt für sich zu Online/
-//      Offline, sobald IHR Request fertig ist, unabhängig von allen
-//      anderen.
-//    - Umbenennungen: "Auktionen" → "Auktionshaus" (erster Endpunkt
-//      im Auktionshaus-Bereich). Gruppe "Merchant-API" → "OPShards-
-//      API", erster Endpunkt darin "Merchant" → "OPShards" (bessere,
-//      einheitliche Bezeichnung – "Merchant" war der interne API-Name,
-//      "OPShards" ist der Name, den die App überall sonst verwendet).
-//    - Entfernt: "UUID (Name)" und "UUID (Name + Edition)" – werden
-//      aktuell nirgends in der App gebraucht.
+//  ÄNDERUNGEN (Sequenziell-Update):
+//    - NEU: Statt alle Endpunkte gleichzeitig zu prüfen (paralleler
+//      .family-Provider), verwaltet jetzt ein ServiceStatusController
+//      EINE interne Warteschlange – IMMER nur ein Request gleich-
+//      zeitig, der nächste startet erst, wenn der vorherige eine
+//      Antwort (Erfolg oder Fehler) geliefert hat.
+//    - NEU: Ein Endpunkt landet erst dann in der Warteschlange, wenn
+//      seine Karte im Screen tatsächlich gebaut wird – siehe
+//      service_status_screen.dart (ListView.builder + requestCheck()
+//      beim ersten Build einer Karte). Beim Scrollen kommen so
+//      nach und nach neue Endpunkte dazu, nicht alle auf einmal.
+//    - NEU: Einmal geprüfte Endpunkte werden für die Dauer der
+//      Session gecacht (kein erneuter Request beim Zurückscrollen).
+//      Der Cache lebt im Provider-State (autoDispose) → wird
+//      automatisch geleert, sobald der Dienstverfügbarkeit-Screen
+//      verlassen wird.
+//    - Ersetzt den bisherigen serviceCheckProvider (FutureProvider.
+//      family, alle parallel) komplett.
+//    - Umbenennungen: "Auktionen" → "Auktionshaus", Gruppe "Merchant-
+//      API" → "OPShards-API", Endpunkt "Merchant" → "OPShards".
+//    - Entfernt: "UUID (Name)" und "UUID (Name + Edition)".
 //
 //  WARUM EIGENE HTTP-CALLS STATT ApiService:
 //  ApiService wirft bei Nicht-200-Antworten eine typisierte Exception
@@ -45,12 +49,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/service_status.dart';
 
-/// Ein einzelner zu prüfender Endpunkt. Wird als Family-Parameter für
-/// serviceCheckProvider verwendet – da endpointGroups eine `const`-
-/// Liste ist, sind alle ServiceEndpoint-Instanzen kanonisiert (Dart
-/// garantiert Objekt-Identität für identische const-Ausdrücke), daher
-/// funktioniert die Standard-Gleichheit (==) hier zuverlässig als
-/// Family-Key, ganz ohne manuelles Überschreiben von ==/hashCode.
+/// Ein einzelner zu prüfender Endpunkt. Wird als Map-Key im Cache
+/// verwendet – da endpointGroups eine `const`-Liste ist, sind alle
+/// ServiceEndpoint-Instanzen kanonisiert (Dart garantiert Objekt-
+/// Identität für identische const-Ausdrücke), daher funktioniert die
+/// Standard-Gleichheit (==) hier zuverlässig als Map-Key, ganz ohne
+/// manuelles Überschreiben von ==/hashCode.
 class ServiceEndpoint {
   final String name;
   final String url;
@@ -92,13 +96,58 @@ const List<MapEntry<String, List<ServiceEndpoint>>> endpointGroups = [
   ]),
 ];
 
-/// Ein Provider PRO Endpunkt – ref.watch(serviceCheckProvider(endpoint))
-/// in der jeweiligen Karte. ref.invalidate(serviceCheckProvider) (ohne
-/// Argument) invalidiert automatisch ALLE aktuell beobachteten
-/// Instanzen auf einmal (z.B. für den Refresh-Button/Pull-to-Refresh).
-final serviceCheckProvider =
-    FutureProvider.autoDispose.family<ServiceCheckResult, ServiceEndpoint>(
-  (ref, endpoint) => _check(endpoint.name, endpoint.url),
+/// Verwaltet eine sequenzielle Warteschlange + einen Session-Cache.
+/// State: Map von Endpunkt → Ergebnis. Wert `null` bedeutet "in der
+/// Warteschlange / wird gerade geprüft", ein fehlender Key bedeutet
+/// "noch nie angefragt" (beide Fälle werden im Screen identisch als
+/// "Wird überprüft…" dargestellt).
+class ServiceStatusController
+    extends AutoDisposeNotifier<Map<ServiceEndpoint, ServiceCheckResult?>> {
+  final List<ServiceEndpoint> _queue = [];
+  bool _isProcessing = false;
+
+  @override
+  Map<ServiceEndpoint, ServiceCheckResult?> build() => {};
+
+  /// Meldet einen Endpunkt zur Prüfung an. Kein Effekt, falls er schon
+  /// geprüft wurde ODER schon in der Warteschlange steht – dadurch ist
+  /// es sicher, requestCheck() bei jedem (Wieder-)Aufbau einer Karte
+  /// erneut aufzurufen.
+  void requestCheck(ServiceEndpoint endpoint) {
+    if (state.containsKey(endpoint)) return;
+    state = {...state, endpoint: null};
+    _queue.add(endpoint);
+    _processQueue();
+  }
+
+  /// Für den Refresh-Button: kompletter Cache-Reset, alle Endpunkte
+  /// (auch aktuell nicht sichtbare) werden neu in die Warteschlange
+  /// gestellt und der Reihe nach neu geprüft.
+  void refreshAll() {
+    state = {};
+    _queue.clear();
+    for (final group in endpointGroups) {
+      for (final endpoint in group.value) {
+        requestCheck(endpoint);
+      }
+    }
+  }
+
+  Future<void> _processQueue() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+    while (_queue.isNotEmpty) {
+      final endpoint = _queue.removeAt(0);
+      final result = await _check(endpoint.name, endpoint.url);
+      state = {...state, endpoint: result};
+    }
+    _isProcessing = false;
+  }
+}
+
+final serviceStatusControllerProvider = NotifierProvider.autoDispose<
+    ServiceStatusController, Map<ServiceEndpoint, ServiceCheckResult?>>(
+  ServiceStatusController.new,
 );
 
 Future<ServiceCheckResult> _check(String name, String url) async {
