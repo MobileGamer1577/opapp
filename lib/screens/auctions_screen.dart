@@ -28,10 +28,17 @@
 //      "Aktuelles Gebot" (Detail-Sheet) bzw. wechselt das Label in
 //      der Liste auf "Gebot".
 //    - NEU: Alle Preise laufen jetzt über AppFormat.currencyAuto(),
-//      das automatisch Tausenderpunkte/Dezimalkomma ODER die neue
-//      Kurzschreibweise (z.B. "40 Mio. $") verwendet – je nachdem,
-//      was unter Einstellungen → Zahlenformat gewählt wurde
-//      (siehe numberFormatProvider).
+//      das automatisch Tausenderpunkte/Dezimalkomma ODER die
+//      Kompakte-Zahlen-Schreibweise (z.B. "40 Mio. $") verwendet –
+//      je nachdem, was unter Einstellungen → Erscheinungsbild
+//      gewählt wurde (siehe numberFormatProvider).
+//
+//  ÄNDERUNGEN (Such-Fix):
+//    - Suche behandelt Bindestriche jetzt wie Leerzeichen, z.B.
+//      findet "Mob Cap" jetzt auch "Mob-Cap Erweiterung" (vorher:
+//      exakter Zeichenvergleich, Bindestrich != Leerzeichen → keine
+//      Treffer). Betrifft Suchbegriff UND Item-Name gleichermaßen,
+//      funktioniert also in beide Richtungen.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -46,6 +53,11 @@ import '../data/models/auction_item.dart';
 import '../data/models/auction_category.dart';
 import '../widgets/app_background.dart';
 import '../widgets/network_icon.dart';
+
+/// Normalisiert einen Suchbegriff/Namen für den Vergleich: Bindestriche
+/// werden wie Leerzeichen behandelt (z.B. "Mob-Cap" == "Mob Cap"), damit
+/// die Suche unabhängig von der genauen Schreibweise funktioniert.
+String _normalizeForSearch(String s) => s.toLowerCase().replaceAll('-', ' ');
 
 class AuctionsScreen extends ConsumerStatefulWidget {
   const AuctionsScreen({super.key});
@@ -197,7 +209,8 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen> {
                 data: (items) {
                   final filtered = items.where((item) {
                     final matchQ = _query.isEmpty ||
-                        item.itemName.toLowerCase().contains(_query.toLowerCase());
+                        _normalizeForSearch(item.itemName)
+                            .contains(_normalizeForSearch(_query));
                     final matchC = _matchesCategory(item, groups);
                     return matchQ && matchC;
                   }).toList();
@@ -425,7 +438,7 @@ class _AuctionCard extends ConsumerWidget {
       error:   (_, __) => 'Unbekannt',
     );
 
-    // Standard- oder Kurzschreibweise (Einstellungen → Zahlenformat)
+    // Standard- oder Kompakte-Zahlen-Schreibweise (Einstellungen → Erscheinungsbild)
     final formatMode = ref.watch(numberFormatProvider);
 
     return Card(
@@ -613,7 +626,7 @@ class _AuctionDetailSheet extends ConsumerWidget {
       error:   (_, __) => 'Unbekannt',
     );
 
-    // Standard- oder Kurzschreibweise (Einstellungen → Zahlenformat)
+    // Standard- oder Kompakte-Zahlen-Schreibweise (Einstellungen → Erscheinungsbild)
     final formatMode = ref.watch(numberFormatProvider);
 
     return ConstrainedBox(
