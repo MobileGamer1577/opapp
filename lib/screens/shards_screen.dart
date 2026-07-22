@@ -19,14 +19,27 @@
 //      bleibt der Rest des Screens unberührt – nur das Sheet zeigt
 //      dann "Nicht verfügbar" statt eines Rekordwerts.
 //    - Platzhalter-Hinweis im Sheet für den künftigen Kursverlauf-Graph.
+//
+//  ÄNDERUNGEN (Kursverlauf-Update):
+//    - NEU: Der Platzhalter ist jetzt ein echter Graph (fl_chart),
+//      lädt vom eigenen Backend (shardHistoryProvider, siehe
+//      shard_history_repository.dart). Umschalter zwischen 7 und 30
+//      Tagen (_RangeToggle) direkt über dem Graphen.
+//    - _ShardDetailSheet ist jetzt ConsumerStatefulWidget statt
+//      ConsumerWidget, damit der gewählte Zeitraum (Standard: 7 Tage)
+//      als lokaler State erhalten bleibt, während man im Sheet ist.
+//    - SETUP: flutter pub add fl_chart
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../core/app_colors.dart';
 import '../core/app_format.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/shard_all_time_high_repository.dart';
+import '../data/repositories/shard_history_repository.dart';
+import '../data/models/shard_history_point.dart';
 import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
 
@@ -233,16 +246,28 @@ class _ShardItemCard extends StatelessWidget {
 }
 
 // ─── Detail-Sheet (bei Tap auf ein Item) ─────────────────────
-// ConsumerWidget, da es zusätzlich den Allzeithoch-Provider lädt.
+// ConsumerStatefulWidget: lädt den Allzeithoch-Provider UND hält den
+// lokal gewählten Kursverlauf-Zeitraum (7/30 Tage) als State.
 
-class _ShardDetailSheet extends ConsumerWidget {
+class _ShardDetailSheet extends ConsumerStatefulWidget {
   final ShardItem item;
   const _ShardDetailSheet({required this.item});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ShardDetailSheet> createState() => _ShardDetailSheetState();
+}
+
+class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
+  int _selectedDays = 7;
+
+  @override
+  Widget build(BuildContext context) {
     final theme    = Theme.of(context);
+    final item     = widget.item;
     final athAsync = ref.watch(shardAllTimeHighProvider);
+    final historyAsync = ref.watch(
+      shardHistoryProvider(ShardHistoryQuery(item.athKey, _selectedDays)),
+    );
 
     final trendColor = item.isAboveBase
         ? AppColors.success
@@ -334,27 +359,39 @@ class _ShardDetailSheet extends ConsumerWidget {
               color:    AppColors.darkTextSecondary,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
 
-          // ─ Platzhalter für den künftigen Kursverlauf-Graphen ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color:        Colors.white.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.show_chart_rounded, color: AppColors.darkTextHint, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Kursverlauf-Graph folgt in einem späteren Update.',
-                    style: theme.textTheme.bodySmall,
-                  ),
+          // ─ Kursverlauf ─────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Kursverlauf', style: theme.textTheme.titleMedium),
+              _RangeToggle(
+                selectedDays: _selectedDays,
+                onChanged: (d) => setState(() => _selectedDays = d),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          historyAsync.when(
+            data: (points) => _ShardHistoryChart(points: points),
+            loading: () => const SizedBox(
+              height: 140,
+              child: Center(
+                child: SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
                 ),
-              ],
+              ),
+            ),
+            error: (_, __) => SizedBox(
+              height: 140,
+              child: Center(
+                child: Text(
+                  'Kursverlauf nicht verfügbar',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
             ),
           ),
         ],
@@ -424,6 +461,165 @@ class _ShardStatBoxLoading extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
         ),
       ),
+    );
+  }
+}
+
+// ─── Zeitraum-Umschalter (7 Tage / 30 Tage) ──────────────────
+
+class _RangeToggle extends StatelessWidget {
+  final int selectedDays;
+  final ValueChanged<int> onChanged;
+  const _RangeToggle({required this.selectedDays, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color:        Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _RangeButton(
+            label:    '7 Tage',
+            selected: selectedDays == 7,
+            onTap:    () => onChanged(7),
+          ),
+          _RangeButton(
+            label:    '30 Tage',
+            selected: selectedDays == 30,
+            onTap:    () => onChanged(30),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RangeButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _RangeButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.accent.withOpacity(0.20)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.accentLight : AppColors.darkTextSecondary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Kursverlauf-Graph (fl_chart) ─────────────────────────────
+// Bewusst simpel gehalten (keine Achsenbeschriftung von fl_chart
+// selbst, keine Touch-Tooltips) – Start-/Enddatum werden stattdessen
+// als einfache Text-Widgets darunter angezeigt. Reduziert die
+// fl_chart-Konfiguration auf den sicher unterstützten Kern.
+
+class _ShardHistoryChart extends StatelessWidget {
+  final List<ShardHistoryPoint> points;
+  const _ShardHistoryChart({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (points.length < 2) {
+      return Container(
+        height: 140,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:        Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Noch nicht genug Datenpunkte für diesen Zeitraum.',
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final spots = <FlSpot>[
+      for (int i = 0; i < points.length; i++) FlSpot(i.toDouble(), points[i].rate),
+    ];
+
+    final rates = points.map((p) => p.rate);
+    final minY  = rates.reduce((a, b) => a < b ? a : b);
+    final maxY  = rates.reduce((a, b) => a > b ? a : b);
+    final pad   = (maxY - minY) == 0 ? 1.0 : (maxY - minY) * 0.15;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 140,
+          child: LineChart(
+            LineChartData(
+              minY: minY - pad,
+              maxY: maxY + pad,
+              gridData:  const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              titlesData: const FlTitlesData(
+                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              lineTouchData: const LineTouchData(enabled: false),
+              lineBarsData: [
+                LineChartBarData(
+                  spots:    spots,
+                  isCurved: true,
+                  color:    AppColors.accent,
+                  barWidth: 2.5,
+                  dotData:  const FlDotData(show: false),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              AppFormat.date(points.first.fetchedAt.toLocal()),
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.darkTextHint),
+            ),
+            Text(
+              AppFormat.date(points.last.fetchedAt.toLocal()),
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.darkTextHint),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
