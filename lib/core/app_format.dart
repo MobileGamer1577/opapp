@@ -143,6 +143,16 @@ abstract class AppFormat {
     return '$d.$m.$y, $h:$min Uhr';
   }
 
+  /// Formatiert nur das Datum ohne Uhrzeit, z.B. "18.06.2026".
+  /// Für Achsen-Beschriftungen (z.B. Kursverlauf-Graph), wo die
+  /// Uhrzeit nur unnötig Platz wegnehmen würde.
+  static String date(DateTime dt) {
+    final d = dt.day.toString().padLeft(2, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final y = dt.year.toString();
+    return '$d.$m.$y';
+  }
+
   // ── Interne Hilfsmethoden ─────────────────────────────────
 
   /// Fügt Tausenderpunkte in einen reinen Ziffern-String ein,
