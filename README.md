@@ -17,6 +17,8 @@ Die OPAPP hilft dir, dein Spielerlebnis zu optimieren:
 
 ## 📥 Installation
 
+> **Hinweis zur Aktualität:** Die Web-Version der App wird oft etwas früher aktualisiert. Es kann daher vorkommen, dass die Web-Ansicht bereits die neuste Version enthält, bevor die neue APK-Datei hier im Release-Bereich hochgeladen wird.
+
 ### 🤖 Android (APK)
 1. Lade die aktuellste `.apk`-Datei aus dem **[Releases-Bereich](../../releases)** herunter.
 2. Öffne die Datei auf deinem Android-Gerät.
