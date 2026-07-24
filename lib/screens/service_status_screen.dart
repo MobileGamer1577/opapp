@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 //  service_status_screen.dart – "Dienstverfügbarkeit"-Screen
 //
-//  ✅ HIER ÄNDERN: Kartendesign; Endpunkte selbst liegen in
+//  ✅ HIER ÄNDERN: Kartendesign; Ping-Schwellenwerte unten;
+//                  Endpunkte selbst liegen in
 //                  service_status_repository.dart
 //  ❌ NICHT ÄNDERN: serviceStatusControllerProvider-Aufruf
 //
@@ -9,6 +10,19 @@
 //  eigene opapp-shards-api Backend) den Live-Status: Online (mit
 //  Ping in ms) oder Offline. Rein informativ – hat keinen Einfluss
 //  auf die restliche App, falls einzelne Dienste gerade down sind.
+//
+//  ÄNDERUNGEN (Ping-Ampel-Update):
+//    - NEU: Der Online-Status ist jetzt dreistufig eingefärbt statt
+//      immer grün: Grün (Ping < _pingWarningMs), Gelb (ab
+//      _pingWarningMs) und Rot (ab _pingCriticalMs) – Offline bleibt
+//      ebenfalls Rot, wie bisher. Gilt global für alle Endpunkte
+//      (keine individuellen Schwellenwerte pro API).
+//    - Nutzt ausschließlich bereits vorhandene Farben (AppColors.
+//      success/warning/error) – keine neuen Farben nötig.
+//    - Das Icon (check_circle vs. cancel) richtet sich weiterhin nach
+//      "online", NICHT nach der Ampel-Farbe – so bleibt auch bei Rot
+//      erkennbar, ob ein Dienst noch erreichbar (nur langsam) oder
+//      wirklich offline ist.
 //
 //  ÄNDERUNGEN (Sequenziell-Update):
 //    - Bewusst KEIN Pull-to-Refresh mehr (RefreshIndicator entfernt).
@@ -31,6 +45,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
 import '../data/repositories/service_status_repository.dart';
 import '../widgets/app_background.dart';
+
+// ── Ping-Schwellenwerte für die Ampel-Farbe (in Millisekunden) ──
+// ✅ HIER ÄNDERN: Schwellenwerte anpassen
+//   < _pingWarningMs   → Grün  (gut)
+//   ≥ _pingWarningMs   → Gelb  (spürbar langsam)
+//   ≥ _pingCriticalMs  → Rot   (schlecht, wie Offline)
+const int _pingWarningMs = 500;
+const int _pingCriticalMs = 800;
 
 class ServiceStatusScreen extends ConsumerWidget {
   const ServiceStatusScreen({super.key});
@@ -165,10 +187,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
           const SizedBox(width: 10),
           result == null
               ? const _CheckingChip()
-              : _StatusChip(
-                  online: result.isOnline,
-                  label: result.isOnline ? 'Online (${result.pingMs}ms)' : 'Offline',
-                ),
+              : _StatusChip(online: result.isOnline, pingMs: result.pingMs),
         ],
       ),
     );
@@ -182,16 +201,25 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
   }
 }
 
-// ─── Status-Chip (Online/Offline) ─────────────────────────────
+// ─── Status-Chip (Online/Offline, Ampel-Farbe nach Ping) ──────
+// Grün  = Online, Ping < _pingWarningMs
+// Gelb  = Online, _pingWarningMs ≤ Ping < _pingCriticalMs
+// Rot   = Online mit Ping ≥ _pingCriticalMs ODER Offline
+//
+// Das Icon (check_circle vs. cancel) folgt weiterhin "online", NICHT
+// der Ampel-Farbe – so bleibt bei Rot erkennbar, ob ein Dienst nur
+// langsam oder wirklich nicht erreichbar ist.
 
 class _StatusChip extends StatelessWidget {
   final bool online;
-  final String label;
-  const _StatusChip({required this.online, required this.label});
+  final int? pingMs;
+  const _StatusChip({required this.online, required this.pingMs});
 
   @override
   Widget build(BuildContext context) {
-    final color = online ? AppColors.success : AppColors.error;
+    final color = _ampelColor(online: online, pingMs: pingMs);
+    final label = online ? 'Online (${pingMs}ms)' : 'Offline';
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -207,6 +235,15 @@ class _StatusChip extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Ampel-Logik: Grün → Gelb → Rot je nach Ping-Schwellenwert oben.
+  /// Offline (kein Ping bekannt) ist immer Rot, unabhängig vom Wert.
+  static Color _ampelColor({required bool online, required int? pingMs}) {
+    if (!online || pingMs == null) return AppColors.error;
+    if (pingMs >= _pingCriticalMs) return AppColors.error;
+    if (pingMs >= _pingWarningMs) return AppColors.warning;
+    return AppColors.success;
   }
 }
 
