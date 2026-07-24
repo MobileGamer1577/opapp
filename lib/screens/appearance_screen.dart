@@ -3,9 +3,9 @@
 //
 //  ✅ HIER ÄNDERN: Weitere Erscheinungsbild-Optionen (z.B. Akzentfarbe,
 //                  künftige Theme-Varianten) als neue Sektion unterhalb
-//                  von "ZAHLENFORMAT" ergänzen (gleiches Muster:
+//                  von "KURSVERLAUF" ergänzen (gleiches Muster:
 //                  _SectionLabel + gruppierte Karte)
-//  ❌ NICHT ÄNDERN: numberFormatProvider-Aufruf
+//  ❌ NICHT ÄNDERN: numberFormatProvider-Aufruf, chartVisibilityProvider-Aufruf
 //
 //  ÄNDERUNGEN (Screen-Update):
 //    - War bisher ein Bottom-Sheet (_AppearanceSheet in
@@ -14,6 +14,12 @@
 //      abgerundete Karte mit Zeilen, durch Linien getrennt). Mehr
 //      Platz für künftige Optionen, ohne dass ein Sheet aus allen
 //      Nähten platzt.
+//
+//  ÄNDERUNGEN (Kursverlauf-Sichtbarkeit-Update):
+//    - NEU: Sektion "KURSVERLAUF" mit Schalter, um den Kursverlauf-
+//      Graph im OPShards-Detail-Sheet ein-/auszuschalten (Standard:
+//      an). Persistiert über chart_visibility_repository.dart,
+//      gleiches Speicher-Muster wie das Zahlenformat.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -21,6 +27,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_colors.dart';
 import '../core/app_format.dart';
 import '../data/repositories/number_format_repository.dart';
+import '../data/repositories/chart_visibility_repository.dart';
 import '../widgets/app_background.dart';
 
 class AppearanceScreen extends StatelessWidget {
@@ -43,6 +50,16 @@ class AppearanceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const _FormatGroupCard(),
+
+            const SizedBox(height: 24),
+            const _SectionLabel('KURSVERLAUF'),
+            const SizedBox(height: 4),
+            Text(
+              'Soll der Kursverlauf-Graph im OPShards-Detail angezeigt werden?',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            const _ChartVisibilityCard(),
 
             // ← Weitere Erscheinungsbild-Sektionen hier ergänzen,
             // z.B.:
@@ -186,6 +203,51 @@ class _FormatOptionRow extends StatelessWidget {
               size: 22,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Karte mit Schalter für die Kursverlauf-Sichtbarkeit ─────────
+// Nutzt SwitchListTile statt eigenem InkWell + Switch: SwitchListTile
+// regelt Tap auf die ganze Zeile UND Tap auf den Schalter selbst
+// intern korrekt, ohne dass beide Handler gleichzeitig auslösen.
+
+class _ChartVisibilityCard extends ConsumerWidget {
+  const _ChartVisibilityCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(chartVisibilityProvider);
+    final theme   = Theme.of(context);
+    final color   = enabled ? AppColors.accent : AppColors.darkTextSecondary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color:        AppColors.darkCard,
+        borderRadius: BorderRadius.circular(18),
+        border:       Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: SwitchListTile(
+        value:          enabled,
+        activeColor:    AppColors.accent,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        onChanged: (v) =>
+            ref.read(chartVisibilityProvider.notifier).setEnabled(v),
+        secondary: Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color:        color.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.show_chart_rounded, color: color, size: 20),
+        ),
+        title: Text('Kursverlauf-Graph', style: theme.textTheme.titleMedium),
+        subtitle: Text(
+          enabled ? 'Wird im OPShards-Detail angezeigt' : 'Ausgeblendet',
+          style: theme.textTheme.bodySmall,
         ),
       ),
     );
