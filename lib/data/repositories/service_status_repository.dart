@@ -4,7 +4,7 @@
 //
 //  ✅ HIER ÄNDERN: endpointGroups – Endpunkte ergänzen/entfernen/
 //                  umbenennen. Test-Werte unten anpassen, falls sich
-//                  die Beispiel-UUID/-XUID ändern sollen.
+//                  die Beispiel-UUID/-XUID/-Item-Key ändern sollen.
 //  ❌ NICHT ÄNDERN: Provider-Name serviceStatusControllerProvider
 //
 //  ÄNDERUNGEN (Sequenziell-Update):
@@ -29,6 +29,18 @@
 //      API" → "OPShards-API", Endpunkt "Merchant" → "OPShards".
 //    - Entfernt: "UUID (Name)" und "UUID (Name + Edition)".
 //
+//  ÄNDERUNGEN (Backend-Erweiterung-Update):
+//    - NEU: Gruppe "OPAPP Shards-API (eigenes Backend)" prüfte bisher
+//      NUR /shards/ath. Der eigene Worker (siehe src/worker.js)
+//      stellt aber noch zwei weitere GET-Endpunkte bereit – jetzt
+//      beide ergänzt: "Bekannte Items" (/shards/items) und
+//      "Kursverlauf" (/shards/history/{itemKey}).
+//    - NEU: _testItemKey als Test-Wert für die parametrisierte
+//      Kursverlauf-Route (gleiches Prinzip wie _testMaterial/
+//      _testUuid/_testXuid unten) – "diamond_block", da dieses Item
+//      bereits Allzeithoch-Daten hat (siehe migrations/0002_seed_
+//      all_time_high.sql).
+//
 //  WARUM EIGENE HTTP-CALLS STATT ApiService:
 //  ApiService wirft bei Nicht-200-Antworten eine typisierte Exception
 //  und verliert dabei den genauen Status. Hier zählt aber jede
@@ -37,12 +49,12 @@
 //  schlanker, direkter http.get() mit Stopwatch.
 //
 //  PARAMETRISIERTE ENDPUNKTE:
-//  Einige Routen brauchen einen echten Wert (Material, UUID, XUID),
-//  sonst würde z.B. ein technisch erreichbarer Server einen 404
-//  liefern, der in einem naiven Check falsch als "kaputt" interpretiert
-//  werden könnte. Die Testwerte unten sind bewusst gewählt (siehe
-//  Konstanten) und rein zum Zweck des Ping-Checks – sie lösen KEINE
-//  echten App-Features aus.
+//  Einige Routen brauchen einen echten Wert (Material, UUID, XUID,
+//  Item-Key), sonst würde z.B. ein technisch erreichbarer Server
+//  einen 404 liefern, der in einem naiven Check falsch als "kaputt"
+//  interpretiert werden könnte. Die Testwerte unten sind bewusst
+//  gewählt (siehe Konstanten) und rein zum Zweck des Ping-Checks –
+//  sie lösen KEINE echten App-Features aus.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,6 +77,12 @@ class ServiceEndpoint {
 const _testMaterial = 'DIAMOND_BLOCK';
 const _testUuid = 'bef1d0a8-e281-4f69-9200-64e07c235c96';
 const _testXuid = '2535459829090337';
+// ✅ NEU: Test-Item-Key für die eigene Kursverlauf-Route – muss zu
+// einem tatsächlich bekannten Item passen (siehe migrations/0002_
+// seed_all_time_high.sql), sonst liefert die Route zwar 200, aber
+// eine leere Liste. Für den reinen Ping-Check egal (zählt trotzdem
+// als "online"), aber so bleibt der Test aussagekräftig.
+const _testItemKey = 'diamond_block';
 
 // ── Zu prüfende Endpunkte, gruppiert nach API ─────────────────
 const List<MapEntry<String, List<ServiceEndpoint>>> endpointGroups = [
@@ -92,7 +110,9 @@ const List<MapEntry<String, List<ServiceEndpoint>>> endpointGroups = [
     ServiceEndpoint('Server-Status', 'https://mc-api.io/server/java/opsucht.net'),
   ]),
   MapEntry('OPAPP Shards-API (eigenes Backend)', [
-    ServiceEndpoint('Allzeithoch', 'https://opapp-shards-api.px32.workers.dev/shards/ath'),
+    ServiceEndpoint('Allzeithoch',    'https://opapp-shards-api.px32.workers.dev/shards/ath'),
+    ServiceEndpoint('Bekannte Items', 'https://opapp-shards-api.px32.workers.dev/shards/items'),
+    ServiceEndpoint('Kursverlauf',    'https://opapp-shards-api.px32.workers.dev/shards/history/$_testItemKey?days=7'),
   ]),
 ];
 
