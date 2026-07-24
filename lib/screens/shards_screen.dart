@@ -29,6 +29,16 @@
 //      ConsumerWidget, damit der gewählte Zeitraum (Standard: 7 Tage)
 //      als lokaler State erhalten bleibt, während man im Sheet ist.
 //    - SETUP: flutter pub add fl_chart
+//
+//  ÄNDERUNGEN (Kursverlauf-Sichtbarkeit-Update):
+//    - NEU: Der Kursverlauf-Graph respektiert jetzt die Einstellung
+//      unter Einstellungen → Erscheinungsbild → "Kursverlauf"
+//      (chartVisibilityProvider, siehe chart_visibility_repository.
+//      dart). Ist er deaktiviert, wird die komplette Sektion (Header,
+//      7-/30-Tage-Umschalter, Graph) im Detail-Sheet ausgeblendet UND
+//      shardHistoryProvider wird dann gar nicht erst gewatcht – spart
+//      also auch den Backend-Request, wenn der Graph eh nicht zu
+//      sehen ist.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -39,6 +49,7 @@ import '../core/app_format.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/shard_all_time_high_repository.dart';
 import '../data/repositories/shard_history_repository.dart';
+import '../data/repositories/chart_visibility_repository.dart';
 import '../data/models/shard_history_point.dart';
 import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
@@ -265,9 +276,14 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
     final theme    = Theme.of(context);
     final item     = widget.item;
     final athAsync = ref.watch(shardAllTimeHighProvider);
-    final historyAsync = ref.watch(
-      shardHistoryProvider(ShardHistoryQuery(item.athKey, _selectedDays)),
-    );
+
+    // ✅ Kursverlauf-Sichtbarkeit (Einstellungen → Erscheinungsbild).
+    // shardHistoryProvider wird bewusst NUR gewatcht, wenn die Sektion
+    // auch wirklich angezeigt wird – sonst unnötiger Backend-Request.
+    final chartEnabled = ref.watch(chartVisibilityProvider);
+    final historyAsync = chartEnabled
+        ? ref.watch(shardHistoryProvider(ShardHistoryQuery(item.athKey, _selectedDays)))
+        : null;
 
     final trendColor = item.isAboveBase
         ? AppColors.success
@@ -359,41 +375,43 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
               color:    AppColors.darkTextSecondary,
             ),
           ),
-          const SizedBox(height: 22),
 
-          // ─ Kursverlauf ─────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Kursverlauf', style: theme.textTheme.titleMedium),
-              _RangeToggle(
-                selectedDays: _selectedDays,
-                onChanged: (d) => setState(() => _selectedDays = d),
+          // ─ Kursverlauf (nur wenn unter Erscheinungsbild aktiviert) ──
+          if (chartEnabled) ...[
+            const SizedBox(height: 22),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Kursverlauf', style: theme.textTheme.titleMedium),
+                _RangeToggle(
+                  selectedDays: _selectedDays,
+                  onChanged: (d) => setState(() => _selectedDays = d),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            historyAsync!.when(
+              data: (points) => _ShardHistoryChart(points: points),
+              loading: () => const SizedBox(
+                height: 140,
+                child: Center(
+                  child: SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+                  ),
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          historyAsync.when(
-            data: (points) => _ShardHistoryChart(points: points),
-            loading: () => const SizedBox(
-              height: 140,
-              child: Center(
-                child: SizedBox(
-                  width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+              error: (_, __) => SizedBox(
+                height: 140,
+                child: Center(
+                  child: Text(
+                    'Kursverlauf nicht verfügbar',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
               ),
             ),
-            error: (_, __) => SizedBox(
-              height: 140,
-              child: Center(
-                child: Text(
-                  'Kursverlauf nicht verfügbar',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );
