@@ -87,32 +87,40 @@ const _testItemKey = 'diamond_block';
 // ── Zu prüfende Endpunkte, gruppiert nach API ─────────────────
 const List<MapEntry<String, List<ServiceEndpoint>>> endpointGroups = [
   MapEntry('Markt-API', [
-    ServiceEndpoint('Markt',        'https://api.opsucht.net/market'),
-    ServiceEndpoint('Preise',       'https://api.opsucht.net/market/prices'),
-    ServiceEndpoint('Kategorien',   'https://api.opsucht.net/market/categories'),
-    ServiceEndpoint('Items',        'https://api.opsucht.net/market/items'),
-    ServiceEndpoint('Preis (Item)', 'https://api.opsucht.net/market/price/$_testMaterial'),
-    ServiceEndpoint('Preisverlauf', 'https://api.opsucht.net/market/history/$_testMaterial'),
+    ServiceEndpoint('market', 'https://api.opsucht.net/market'),
+    ServiceEndpoint('Preise', 'https://api.opsucht.net/market/prices'),
+    ServiceEndpoint('Kategorien', 'https://api.opsucht.net/market/categories'),
+    ServiceEndpoint('Items', 'https://api.opsucht.net/market/items'),
+    ServiceEndpoint(
+        'Preis (Item)', 'https://api.opsucht.net/market/price/$_testMaterial'),
+    ServiceEndpoint('Preisverlauf',
+        'https://api.opsucht.net/market/history/$_testMaterial'),
   ]),
   MapEntry('Auktionshaus-API', [
-    ServiceEndpoint('Auktionshaus',     'https://api.opsucht.net/auctions'),
-    ServiceEndpoint('Kategorien',       'https://api.opsucht.net/auctions/categories'),
-    ServiceEndpoint('Aktive Auktionen', 'https://api.opsucht.net/auctions/active'),
+    ServiceEndpoint('auctions', 'https://api.opsucht.net/auctions'),
+    ServiceEndpoint(
+        'Kategorien', 'https://api.opsucht.net/auctions/categories'),
+    ServiceEndpoint(
+        'Aktive Auktionen', 'https://api.opsucht.net/auctions/active'),
   ]),
-  MapEntry('OPShards-API', [
-    ServiceEndpoint('OPShards',     'https://api.opsucht.net/merchant/'),
+  MapEntry('Wertstoffhändler-API', [
+    ServiceEndpoint('merchant', 'https://api.opsucht.net/merchant/'),
     ServiceEndpoint('Wechselkurse', 'https://api.opsucht.net/merchant/rates'),
   ]),
   MapEntry('Spieler-API (mc-api.io)', [
-    ServiceEndpoint('mc-api.io',     'https://mc-api.io'),
-    ServiceEndpoint('Name (UUID)',   'https://mc-api.io/name/$_testUuid'),
-    ServiceEndpoint('Name (XUID)',   'https://mc-api.io/name/$_testXuid'),
-    ServiceEndpoint('Server-Status', 'https://mc-api.io/server/java/opsucht.net'),
+    ServiceEndpoint('mc-api.io', 'https://mc-api.io'),
+    ServiceEndpoint('Name (UUID)', 'https://mc-api.io/name/$_testUuid'),
+    ServiceEndpoint('Name (XUID)', 'https://mc-api.io/name/$_testXuid'),
+    ServiceEndpoint(
+        'Server-Status', 'https://mc-api.io/server/java/opsucht.net'),
   ]),
   MapEntry('OPAPP Shards-API (eigenes Backend)', [
-    ServiceEndpoint('Allzeithoch',    'https://opapp-shards-api.px32.workers.dev/shards/ath'),
-    ServiceEndpoint('Bekannte Items', 'https://opapp-shards-api.px32.workers.dev/shards/items'),
-    ServiceEndpoint('Kursverlauf',    'https://opapp-shards-api.px32.workers.dev/shards/history/$_testItemKey?days=7'),
+    ServiceEndpoint(
+        'Allzeithoch', 'https://opapp-shards-api.px32.workers.dev/shards/ath'),
+    ServiceEndpoint('Bekannte Items',
+        'https://opapp-shards-api.px32.workers.dev/shards/items'),
+    ServiceEndpoint('Kursverlauf',
+        'https://opapp-shards-api.px32.workers.dev/shards/history/$_testItemKey?days=7'),
   ]),
 ];
 
@@ -175,9 +183,10 @@ Future<ServiceCheckResult> _check(String name, String url) async {
   try {
     // Bewusst OHNE ApiService: jede empfangene Antwort (auch 4xx/5xx)
     // zählt als "online" – der Server ist erreichbar und antwortet.
-    await http
-        .get(Uri.parse(url), headers: {'Accept': '*/*', 'User-Agent': 'OPAPP/1.0'})
-        .timeout(const Duration(seconds: 6));
+    await http.get(Uri.parse(url), headers: {
+      'Accept': '*/*',
+      'User-Agent': 'OPAPP/1.0'
+    }).timeout(const Duration(seconds: 6));
     stopwatch.stop();
     return ServiceCheckResult(
       name: name,
@@ -187,6 +196,7 @@ Future<ServiceCheckResult> _check(String name, String url) async {
     );
   } catch (_) {
     stopwatch.stop();
-    return ServiceCheckResult(name: name, url: url, isOnline: false, pingMs: null);
+    return ServiceCheckResult(
+        name: name, url: url, isOnline: false, pingMs: null);
   }
 }
