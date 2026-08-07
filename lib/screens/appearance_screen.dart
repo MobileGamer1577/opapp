@@ -3,9 +3,10 @@
 //
 //  ✅ HIER ÄNDERN: Weitere Erscheinungsbild-Optionen (z.B. Akzentfarbe,
 //                  künftige Theme-Varianten) als neue Sektion unterhalb
-//                  von "KURSVERLAUF" ergänzen (gleiches Muster:
+//                  von "WÄHRUNGSFARBEN" ergänzen (gleiches Muster:
 //                  _SectionLabel + gruppierte Karte)
-//  ❌ NICHT ÄNDERN: numberFormatProvider-Aufruf, chartVisibilityProvider-Aufruf
+//  ❌ NICHT ÄNDERN: numberFormatProvider-Aufruf, chartVisibilityProvider-
+//                  Aufruf, currencyColorProvider-Aufruf
 //
 //  ÄNDERUNGEN (Screen-Update):
 //    - War bisher ein Bottom-Sheet (_AppearanceSheet in
@@ -20,6 +21,12 @@
 //      Graph im OPShards-Detail-Sheet ein-/auszuschalten (Standard:
 //      an). Persistiert über chart_visibility_repository.dart,
 //      gleiches Speicher-Muster wie das Zahlenformat.
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - NEU: Sektion "WÄHRUNGSFARBEN" mit Schalter, um die Lila/Rot-
+//      Einfärbung nach Wertstoffhändler-Währung (OPShards/RedCoins)
+//      ein-/auszuschalten (Standard: an). Persistiert über
+//      currency_color_repository.dart, gleiches Muster wie oben.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -28,6 +35,7 @@ import '../core/app_colors.dart';
 import '../core/app_format.dart';
 import '../data/repositories/number_format_repository.dart';
 import '../data/repositories/chart_visibility_repository.dart';
+import '../data/repositories/currency_color_repository.dart';
 import '../widgets/app_background.dart';
 
 class AppearanceScreen extends StatelessWidget {
@@ -45,7 +53,7 @@ class AppearanceScreen extends StatelessWidget {
             const _SectionLabel('ZAHLENFORMAT'),
             const SizedBox(height: 4),
             Text(
-              'Wie sollen Preise in der App angezeigt werden?',
+              'Wie sollen die Preise in der App angezeigt werden?',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 10),
@@ -60,6 +68,16 @@ class AppearanceScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const _ChartVisibilityCard(),
+
+            const SizedBox(height: 24),
+            const _SectionLabel('WÄHRUNGSFARBEN'),
+            const SizedBox(height: 4),
+            Text(
+              'Sollen OPShards und RedCoins im Wertstoffhändler farblich unterschieden werden?',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            const _CurrencyColorCard(),
 
             // ← Weitere Erscheinungsbild-Sektionen hier ergänzen,
             // z.B.:
@@ -88,9 +106,9 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          color:         AppColors.accentLight,
-          fontSize:      12,
-          fontWeight:    FontWeight.w700,
+          color: AppColors.accentLight,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
         ),
       ),
@@ -109,34 +127,34 @@ class _FormatGroupCard extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color:        AppColors.darkCard,
+        color: AppColors.darkCard,
         borderRadius: BorderRadius.circular(18),
-        border:       Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         children: [
           _FormatOptionRow(
-            title:    'Standard',
-            example:  AppFormat.currency(40000000),
+            title: 'Standard',
+            example: AppFormat.currency(40000000),
             selected: current == NumberFormatMode.standard,
-            isFirst:  true,
-            isLast:   false,
+            isFirst: true,
+            isLast: false,
             onTap: () => ref
                 .read(numberFormatProvider.notifier)
                 .setMode(NumberFormatMode.standard),
           ),
           Divider(
-            height:    1,
-            indent:    16,
+            height: 1,
+            indent: 16,
             endIndent: 16,
-            color:     Colors.white.withOpacity(0.06),
+            color: Colors.white.withOpacity(0.06),
           ),
           _FormatOptionRow(
-            title:    'Kompakte Zahlen',
-            example:  AppFormat.compactCurrency(40000000),
+            title: 'Kompakte Zahlen',
+            example: AppFormat.compactCurrency(40000000),
             selected: current == NumberFormatMode.compact,
-            isFirst:  false,
-            isLast:   true,
+            isFirst: false,
+            isLast: true,
             onTap: () => ref
                 .read(numberFormatProvider.notifier)
                 .setMode(NumberFormatMode.compact),
@@ -167,23 +185,26 @@ class _FormatOptionRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.vertical(
-        top:    isFirst ? const Radius.circular(18) : Radius.zero,
-        bottom: isLast  ? const Radius.circular(18) : Radius.zero,
+        top: isFirst ? const Radius.circular(18) : Radius.zero,
+        bottom: isLast ? const Radius.circular(18) : Radius.zero,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: (selected ? AppColors.accent : AppColors.darkTextSecondary)
-                    .withOpacity(0.14),
+                color:
+                    (selected ? AppColors.accent : AppColors.darkTextSecondary)
+                        .withOpacity(0.14),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.numbers_rounded,
-                color: selected ? AppColors.accent : AppColors.darkTextSecondary,
+                color:
+                    selected ? AppColors.accent : AppColors.darkTextSecondary,
                 size: 20,
               ),
             ),
@@ -220,26 +241,27 @@ class _ChartVisibilityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(chartVisibilityProvider);
-    final theme   = Theme.of(context);
-    final color   = enabled ? AppColors.accent : AppColors.darkTextSecondary;
+    final theme = Theme.of(context);
+    final color = enabled ? AppColors.accent : AppColors.darkTextSecondary;
 
     return Container(
       decoration: BoxDecoration(
-        color:        AppColors.darkCard,
+        color: AppColors.darkCard,
         borderRadius: BorderRadius.circular(18),
-        border:       Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: SwitchListTile(
-        value:          enabled,
-        activeColor:    AppColors.accent,
+        value: enabled,
+        activeColor: AppColors.accent,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         onChanged: (v) =>
             ref.read(chartVisibilityProvider.notifier).setEnabled(v),
         secondary: Container(
-          width: 40, height: 40,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color:        color.withOpacity(0.14),
+            color: color.withOpacity(0.14),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(Icons.show_chart_rounded, color: color, size: 20),
@@ -247,6 +269,53 @@ class _ChartVisibilityCard extends ConsumerWidget {
         title: Text('Kursverlauf-Graph', style: theme.textTheme.titleMedium),
         subtitle: Text(
           enabled ? 'Wird im OPShards-Detail angezeigt' : 'Ausgeblendet',
+          style: theme.textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Karte mit Schalter für die Währungsfarben (Redcoins-Update) ──
+// Gleiches Muster wie _ChartVisibilityCard oben – SwitchListTile
+// statt eigenem InkWell + Switch.
+
+class _CurrencyColorCard extends ConsumerWidget {
+  const _CurrencyColorCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(currencyColorProvider);
+    final theme = Theme.of(context);
+    final color = enabled ? AppColors.accent : AppColors.darkTextSecondary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.darkCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: SwitchListTile(
+        value: enabled,
+        activeColor: AppColors.accent,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        onChanged: (v) =>
+            ref.read(currencyColorProvider.notifier).setEnabled(v),
+        secondary: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.palette_rounded, color: color, size: 20),
+        ),
+        title: Text('Währungsfarben', style: theme.textTheme.titleMedium),
+        subtitle: Text(
+          enabled
+              ? 'Lila für OPShards, Rot für RedCoins'
+              : 'Einheitliches Standard-Design',
           style: theme.textTheme.bodySmall,
         ),
       ),
