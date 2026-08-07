@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  shards_screen.dart – OPShards-Wechselkurse
+//  shards_screen.dart – Wertstoffhändler (OPShards & RedCoins)
 //
 //  ✅ HIER ÄNDERN: Kartendesign, Detail-Sheet-Inhalt
 //  ❌ NICHT ÄNDERN: shardRateProvider-Aufruf
@@ -39,6 +39,31 @@
 //      shardHistoryProvider wird dann gar nicht erst gewatcht – spart
 //      also auch den Backend-Request, wenn der Graph eh nicht zu
 //      sehen ist.
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - Screen- + AppBar-Titel: "OPShards" → "Wertstoffhändler", da der
+//      Wertstoffhändler jetzt zwei Server-Währungen führt (OPShards &
+//      RedCoins, siehe "target"-Feld in shard_rate.dart).
+//    - NEU: Kachel-Liste, Detail-Sheet (Icon-Akzent + Kursverlauf-
+//      Graph-Linie) UND das Live-Kurs-Banner auf dem Dashboard (siehe
+//      dashboard_screen.dart) färben sich jetzt nach der Währung des
+//      jeweiligen Items ein (Lila = OPShards, Rot = RedCoins, siehe
+//      ShardItem.currencyColor). Steuerbar über Einstellungen →
+//      Erscheinungsbild → "Währungsfarben" (currencyColorProvider,
+//      siehe currency_color_repository.dart). Ausgeschaltet → überall
+//      der bisherige einheitliche Lila-Akzent.
+//    - Der grün/rot Trend-Indikator (Kurs über/unter Basis) bleibt
+//      davon bewusst UNABHÄNGIG, damit "RedCoins-Rot" sich nicht mit
+//      "schlechter-Kurs-Rot" vermischt.
+//    - displayRate/displayBase zeigen jetzt automatisch die richtige
+//      Einheit ("OPShards" oder "RedCoins") – kommt direkt aus
+//      ShardItem, keine Änderung hier nötig.
+//    - Allzeithoch-Anzeige nutzt jetzt ath.displayRateFor(item.
+//      currencyLabel) statt ath.displayRate, damit auch dort die
+//      richtige Einheit steht (die ATH-Daten selbst kennen keine
+//      Währung, siehe Kommentar in shard_all_time_high.dart).
+//    - _ShardItemCard ist jetzt ConsumerWidget statt StatelessWidget
+//      (watcht currencyColorProvider).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -50,6 +75,7 @@ import '../data/repositories/shard_repository.dart';
 import '../data/repositories/shard_all_time_high_repository.dart';
 import '../data/repositories/shard_history_repository.dart';
 import '../data/repositories/chart_visibility_repository.dart';
+import '../data/repositories/currency_color_repository.dart';
 import '../data/models/shard_history_point.dart';
 import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
@@ -66,7 +92,7 @@ class ShardsScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('OPShards'),
+          title: const Text('Wertstoffhändler'),
           actions: [
             IconButton(
               icon:      const Icon(Icons.refresh),
@@ -139,26 +165,43 @@ class ShardsScreen extends ConsumerWidget {
 }
 
 // ─── Einzelne Kurs-Karte (antippbar) ─────────────────────────
+// NEU (Redcoins-Update): ConsumerWidget statt StatelessWidget, da die
+// Karte jetzt currencyColorProvider watcht (Ein/Aus-Schalter für die
+// Währungsfarben, siehe Einstellungen → Erscheinungsbild).
 
-class _ShardItemCard extends StatelessWidget {
+class _ShardItemCard extends ConsumerWidget {
   final ShardItem item;
   const _ShardItemCard({required this.item});
 
   @override
-  Widget build(BuildContext context) {
-    // Farbe je nach Kurs vs. Basiswert: Grün = drüber, Rot = drunter
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Farbe je nach Kurs vs. Basiswert: Grün = drüber, Rot = drunter.
+    // Bewusst UNABHÄNGIG von der Währungsfarbe (siehe unten) – sonst
+    // wäre bei einem RedCoins-Item unter Basis nicht mehr erkennbar,
+    // ob Rot "RedCoins" oder "schlechter Kurs" bedeutet.
     final trendColor = item.isAboveBase
         ? AppColors.success
         : item.isBelowBase
             ? AppColors.error
             : AppColors.darkTextSecondary;
 
+    // ✅ Währungsfarben (Redcoins-Update): Lila = OPShards, Rot =
+    // RedCoins. Abschaltbar unter Einstellungen → Erscheinungsbild.
+    final colorsEnabled = ref.watch(currencyColorProvider);
+    final accentColor = colorsEnabled ? item.currencyColor : AppColors.accent;
+    final cardColor = colorsEnabled
+        ? Color.alphaBlend(accentColor.withOpacity(0.10), AppColors.darkCard)
+        : AppColors.darkCard;
+    final borderColor = colorsEnabled
+        ? accentColor.withOpacity(0.22)
+        : Colors.white.withOpacity(0.07);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color:        AppColors.darkCard,
+        color:        cardColor,
         borderRadius: BorderRadius.circular(16),
-        border:       Border.all(color: Colors.white.withOpacity(0.07)),
+        border:       Border.all(color: borderColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -177,15 +220,20 @@ class _ShardItemCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                // Icon je Item (siehe shard_rate.dart → shardIcons)
+                // Icon je Item (siehe shard_rate.dart → shardIconFor),
+                // Akzent jetzt währungsabhängig (siehe oben).
                 Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color:        AppColors.accent.withOpacity(0.15),
+                    color:        accentColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
-                    border:       Border.all(color: AppColors.accent.withOpacity(0.25)),
+                    border:       Border.all(color: accentColor.withOpacity(0.25)),
                   ),
-                  child: Icon(shardIconFor(item.displayName), color: AppColors.accent, size: 20),
+                  child: Icon(
+                    shardIconFor(item.displayName, target: item.target),
+                    color: accentColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
 
@@ -285,6 +333,11 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
         ? ref.watch(shardHistoryProvider(ShardHistoryQuery(item.athKey, _selectedDays)))
         : null;
 
+    // ✅ Währungsfarben (Redcoins-Update) – gleiches Prinzip wie in
+    // _ShardItemCard, hier für Icon-Akzent + Kursverlauf-Graph-Linie.
+    final colorsEnabled = ref.watch(currencyColorProvider);
+    final accentColor = colorsEnabled ? item.currencyColor : AppColors.accent;
+
     final trendColor = item.isAboveBase
         ? AppColors.success
         : item.isBelowBase
@@ -316,12 +369,16 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
               Container(
                 width: 56, height: 56,
                 decoration: BoxDecoration(
-                  color:        AppColors.accent.withOpacity(0.12),
+                  color:        accentColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
-                  border:       Border.all(color: AppColors.accent.withOpacity(0.25)),
+                  border:       Border.all(color: accentColor.withOpacity(0.25)),
                 ),
                 child: Center(
-                  child: Icon(shardIconFor(item.displayName), color: AppColors.accent, size: 30),
+                  child: Icon(
+                    shardIconFor(item.displayName, target: item.target),
+                    color: accentColor,
+                    size: 30,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -349,6 +406,10 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
           const SizedBox(height: 12),
 
           // ─ Allzeithoch (aus dem opapp-shards-api Backend) ──
+          // NEU (Redcoins-Update): displayRateFor(item.currencyLabel)
+          // statt displayRate – die ATH-Daten kennen selbst keine
+          // Währung (siehe Kommentar in shard_all_time_high.dart), die
+          // Einheit kommt deshalb vom aktuell geöffneten Live-Item.
           athAsync.when(
             data: (map) {
               final ath = map[item.athKey];
@@ -362,7 +423,7 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
               }
               return _ShardStatBox(
                 label:    'Höchster Kurs',
-                value:    ath.displayRate,
+                value:    ath.displayRateFor(item.currencyLabel),
                 sublabel: '${ath.displayChange} über Basis · ${AppFormat.dateTime(ath.achievedAt.toLocal())}',
                 color:    AppColors.gold,
               );
@@ -391,7 +452,7 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
             ),
             const SizedBox(height: 12),
             historyAsync!.when(
-              data: (points) => _ShardHistoryChart(points: points),
+              data: (points) => _ShardHistoryChart(points: points, color: accentColor),
               loading: () => const SizedBox(
                 height: 140,
                 child: Center(
@@ -558,10 +619,15 @@ class _RangeButton extends StatelessWidget {
 // selbst, keine Touch-Tooltips) – Start-/Enddatum werden stattdessen
 // als einfache Text-Widgets darunter angezeigt. Reduziert die
 // fl_chart-Konfiguration auf den sicher unterstützten Kern.
+//
+// NEU (Redcoins-Update): [color] ersetzt das vorher fest verdrahtete
+// AppColors.accent – kommt vom Detail-Sheet und richtet sich (wenn
+// Währungsfarben aktiviert sind) nach der Währung des Items.
 
 class _ShardHistoryChart extends StatelessWidget {
   final List<ShardHistoryPoint> points;
-  const _ShardHistoryChart({required this.points});
+  final Color color;
+  const _ShardHistoryChart({required this.points, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -615,7 +681,7 @@ class _ShardHistoryChart extends StatelessWidget {
                 LineChartBarData(
                   spots:    spots,
                   isCurved: true,
-                  color:    AppColors.accent,
+                  color:    color,
                   barWidth: 2.5,
                   dotData:  const FlDotData(show: false),
                 ),
