@@ -12,6 +12,17 @@
 //    [ { "item_key": "diamond_block", "rate": 13.6, "base": 12,
 //        "achieved_at": 1783900800000 }, ... ]
 //    achieved_at ist ein Unix-Zeitstempel in Millisekunden (UTC).
+//    ⚠️ Enthält KEIN Währungsfeld – der Worker kennt "target" nach
+//    aktuellem Stand nicht (separates Repo). Die Einheit für die
+//    Anzeige kommt deshalb vom zugehörigen ShardItem, siehe
+//    displayRateFor() unten und shards_screen.dart.
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - NEU: displayRateFor(currencyLabel) – wie displayRate, aber mit
+//      übergebener Einheit statt fest "OPShards". displayRate bleibt
+//      als rückwärtskompatibler Alias (nimmt "OPShards" an) erhalten,
+//      wird aber im Detail-Sheet nicht mehr direkt verwendet – siehe
+//      shards_screen.dart (dort: ath.displayRateFor(item.currencyLabel)).
 // ═══════════════════════════════════════════════════════════════
 
 class ShardAllTimeHigh {
@@ -44,8 +55,17 @@ class ShardAllTimeHigh {
   static String _fmt(double v) =>
       v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
-  /// z.B. "13.6 OPShards" – gleiche Schreibweise wie ShardItem.displayRate
-  String get displayRate => '${_fmt(rate)} OPShards';
+  /// z.B. "13.6 OPShards" – rückwärtskompatibler Alias für
+  /// displayRateFor('OPShards'). Für RedCoins-Items unbedingt
+  /// displayRateFor(item.currencyLabel) verwenden (siehe
+  /// shards_screen.dart), sonst steht bei RedCoins-Items fälschlich
+  /// "OPShards" dran.
+  String get displayRate => displayRateFor('OPShards');
+
+  /// z.B. "13.6 RedCoins" – [currencyLabel] kommt vom zugehörigen
+  /// ShardItem, da die ATH-Daten selbst keine Währung kennen (siehe
+  /// Datei-Kommentar oben).
+  String displayRateFor(String currencyLabel) => '${_fmt(rate)} $currencyLabel';
 
   /// z.B. "+13.3%"
   String get displayChange {
