@@ -17,6 +17,17 @@
 //      Vollständige Liste gibt es weiterhin im Auktionshaus-Screen.
 //    - Zahnrad-Icon im Header → öffnet die neuen Einstellungen
 //      (AppRoutes.settings)
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - Feature-Karte "OPShards" → "Wertstoffhändler" (Titel +
+//      Untertitel), da der Wertstoffhändler jetzt zwei Server-
+//      Währungen führt (OPShards & RedCoins).
+//    - Live-Kurs-Banner färbt sein Icon jetzt nach der Währung des
+//      "besten" Items ein (Lila = OPShards, Rot = RedCoins), sofern
+//      unter Einstellungen → Erscheinungsbild → "Währungsfarben"
+//      aktiviert (Standard: an) – siehe currency_color_repository.dart.
+//      Der Kurs-Text bleibt weiterhin grün/rot nach Trend (über/unter
+//      Basis), unabhängig von der Währungsfarbe.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -25,6 +36,7 @@ import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
 import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
+import '../data/repositories/currency_color_repository.dart';
 import '../data/models/shard_rate.dart';
 import '../widgets/app_background.dart';
 
@@ -33,8 +45,9 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme      = Theme.of(context);
-    final shardAsync = ref.watch(shardRateProvider);
+    final theme         = Theme.of(context);
+    final shardAsync    = ref.watch(shardRateProvider);
+    final colorsEnabled = ref.watch(currencyColorProvider);
 
     return AppBackground(
       child: Scaffold(
@@ -89,10 +102,16 @@ class DashboardScreen extends ConsumerWidget {
                 data: (rates) {
                   final best = rates.best;
                   if (best == null) return const SizedBox.shrink();
+                  // ✅ Währungsfarbe (Redcoins-Update): Lila für
+                  // OPShards, Rot für RedCoins – abschaltbar unter
+                  // Einstellungen → Erscheinungsbild.
+                  final accentColor =
+                      colorsEnabled ? best.currencyColor : AppColors.sectionShards;
                   return _RateBanner(
-                    label:     best.displayName,
-                    rate:      best.displayRate,
-                    icon:      shardIconFor(best.displayName),
+                    label:       best.displayName,
+                    rate:        best.displayRate,
+                    icon:        shardIconFor(best.displayName, target: best.target),
+                    accentColor: accentColor,
                     rateColor: best.isAboveBase
                         ? AppColors.success
                         : best.isBelowBase
@@ -129,8 +148,8 @@ class DashboardScreen extends ConsumerWidget {
               _FeatureCard(
                 icon:     Icons.diamond,
                 color:    AppColors.sectionShards,
-                title:    'OPShards',
-                subtitle: 'Aktueller Wechselkurs',
+                title:    'Wertstoffhändler',
+                subtitle: 'OPShards & RedCoins',
                 onTap:    () => context.push(AppRoutes.shards),
               ),
               const SizedBox(height: 10),
@@ -155,11 +174,13 @@ class _RateBanner extends StatelessWidget {
   final String label;
   final String rate;
   final IconData icon;
+  final Color accentColor; // NEU (Redcoins-Update): ersetzt festes AppColors.sectionShards
   final Color rateColor;
   const _RateBanner({
     required this.label,
     required this.rate,
     required this.icon,
+    required this.accentColor,
     required this.rateColor,
   });
 
@@ -177,10 +198,10 @@ class _RateBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color:        AppColors.sectionShards.withOpacity(0.15),
+              color:        accentColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: AppColors.sectionShards, size: 18),
+            child: Icon(icon, color: accentColor, size: 18),
           ),
           const SizedBox(width: 12),
           Column(
