@@ -4,6 +4,9 @@
 //  ✅ HIER ÄNDERN: _nameOverrides für neue Items mit eigenem
 //                  Anzeigenamen ergänzen
 //  ✅ HIER ÄNDERN: shardIcons für neue Items ein Icon ergänzen
+//  ✅ HIER ÄNDERN: _currencyLabels / _currencyColors für neue
+//                  Wertstoffhändler-Währungen ergänzen (siehe
+//                  Redcoins-Update unten)
 //  ❌ NICHT ÄNDERN: ShardRates / ShardItem Klassenstruktur
 //
 //  API-FORMAT (bestätigt, siehe /merchant/rates):
@@ -25,9 +28,33 @@
 //      mit extractItemKey() in worker.js übereinstimmen (gleiches
 //      Prinzip: Material-ID bei normalen Items, extrahierter
 //      Anzeigename bei Custom-Items) – siehe dortiger Kommentar.
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - NEU: "target"-Feld wird jetzt ausgewertet (vorher ignoriert,
+//      da bisher immer "opshards"). Der Wertstoffhändler kennt jetzt
+//      zwei Server-Währungen: "opshards" und "redcoins".
+//    - NEU: target – rohe Währungs-ID aus der API (z.B. "opshards",
+//      "redcoins"). Fehlt das Feld (ältere/unerwartete API-Antwort),
+//      wird "opshards" angenommen (Rückwärtskompatibilität).
+//    - NEU: currencyLabel / currencyColor – lösen "target" über eine
+//      Lookup-Map auf. WICHTIG: Das ist bewusst KEIN Enum, sondern
+//      String-basiert mit Fallback – taucht später eine dritte
+//      Währung in der API auf, crasht nichts, sie bekommt nur einen
+//      neutralen Akzent (AppColors.accent) und einen automatisch
+//      großgeschriebenen Namen, bis hier ein eigener Eintrag ergänzt
+//      wird. Erfüllt die Anforderung "dynamische Skalierung" auch für
+//      künftige, heute noch unbekannte Währungen – nicht nur für neue
+//      Items innerhalb der zwei bekannten.
+//    - displayRate / displayBase zeigen jetzt currencyLabel statt
+//      fest "OPShards" (z.B. "12.40 RedCoins" bei Redcoins-Items).
+//    - shardIconFor() bekommt einen optionalen target-Parameter für
+//      ein währungsspezifisches Fallback-Icon (Diamant für OPShards,
+//      Münze für RedCoins), falls kein Name-Override in shardIcons
+//      passt.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../../core/app_colors.dart';
 
 /// Bekannte Items mit eigenem (deutschem) Anzeigenamen statt der
 /// automatisch formatierten Material-ID.
@@ -37,7 +64,8 @@ const Map<String, String> _nameOverrides = {
 };
 
 /// Icon je Item – Schlüssel ist der finale Anzeigename.
-/// Unbekannte Items bekommen automatisch Icons.diamond (Fallback).
+/// Unbekannte Items bekommen automatisch ein währungsspezifisches
+/// Fallback-Icon (siehe _fallbackIconFor unten).
 const Map<String, IconData> shardIcons = {
   'Diamant Block':    Icons.view_in_ar_rounded,
   'Netherite Barren': Icons.token_rounded,
@@ -46,7 +74,55 @@ const Map<String, IconData> shardIcons = {
   'Steinplatten':     Icons.layers_rounded,
 };
 
-IconData shardIconFor(String displayName) => shardIcons[displayName] ?? Icons.diamond;
+/// ✅ HIER ÄNDERN: Anzeigename je Wertstoffhändler-Währung.
+/// Unbekannte "target"-Werte fallen automatisch auf eine großge-
+/// schriebene Version des rohen Werts zurück (siehe currencyLabelFor).
+const Map<String, String> _currencyLabels = {
+  'opshards': 'OPShards',
+  'redcoins': 'RedCoins',
+};
+
+/// ✅ HIER ÄNDERN: Akzentfarbe je Wertstoffhändler-Währung.
+/// Passendes Gegenstück in app_colors.dart: AppColors.currencyOpshards
+/// / AppColors.currencyRedcoins. Neue Währung → dort UND hier ergänzen.
+const Map<String, Color> _currencyColors = {
+  'opshards': AppColors.currencyOpshards,
+  'redcoins': AppColors.currencyRedcoins,
+};
+
+/// Löst eine rohe "target"-Kennung in den Anzeigenamen auf, z.B.
+/// "redcoins" → "RedCoins". Unbekannte Währungen (noch keine eigene
+/// Zuordnung oben) werden automatisch großgeschrieben statt zu
+/// crashen, z.B. "diamonds" → "Diamonds".
+String currencyLabelFor(String target) {
+  final known = _currencyLabels[target];
+  if (known != null) return known;
+  if (target.isEmpty) return 'Unbekannt';
+  return '${target[0].toUpperCase()}${target.substring(1)}';
+}
+
+/// Löst eine rohe "target"-Kennung in die Akzentfarbe auf. Unbekannte
+/// Währungen bekommen AppColors.accent (neutrales Lila) statt zu
+/// crashen – bis hier ein eigener Eintrag ergänzt wird.
+Color currencyColorFor(String target) => _currencyColors[target] ?? AppColors.accent;
+
+/// Icon für ein Item: zuerst Name-Override aus [shardIcons], sonst ein
+/// währungsspezifisches Fallback-Icon (Diamant für OPShards, Münze für
+/// RedCoins, neutrales Icon für unbekannte künftige Währungen).
+IconData shardIconFor(String displayName, {String target = 'opshards'}) {
+  return shardIcons[displayName] ?? _fallbackIconFor(target);
+}
+
+IconData _fallbackIconFor(String target) {
+  switch (target) {
+    case 'redcoins':
+      return Icons.paid_rounded;
+    case 'opshards':
+      return Icons.diamond;
+    default:
+      return Icons.category_outlined; // unbekannte künftige Währung
+  }
+}
 
 /// Ein einzelnes Item mit seinem OPShard-Wechselkurs
 class ShardItem {
@@ -57,11 +133,18 @@ class ShardItem {
   final double rate; // aktueller Kurs (exchangeRate)
   final double base;  // Basiskurs (Kurs bei neutralem Stand)
 
+  /// Rohe Währungs-ID aus der API, z.B. "opshards" oder "redcoins".
+  /// Fehlt "target" in der API-Antwort, wird "opshards" angenommen
+  /// (Rückwärtskompatibilität – das Feld gab es schon vorher in der
+  /// API, war aber immer "opshards" und wurde deshalb nie ausgewertet).
+  final String target;
+
   const ShardItem({
     required this.material,
     required this.displayName,
     required this.rate,
     required this.base,
+    required this.target,
   });
 
   factory ShardItem.fromJson(Map<String, dynamic> json) {
@@ -107,6 +190,11 @@ class ShardItem {
                       ?? nbtName
                       ?? _formatMaterial(material);
 
+    // NEU (Redcoins-Update): "target" gab es schon vorher in der API,
+    // war aber immer "opshards" und wurde deshalb nie ausgewertet.
+    // Fehlt es (unerwartete/ältere Antwort), wird "opshards" angenommen.
+    final target = json['target']?.toString().toLowerCase() ?? 'opshards';
+
     return ShardItem(
       material:    material,
       displayName: displayName,
@@ -114,6 +202,7 @@ class ShardItem {
       // Kein expliziter Basiswert in der API? Dann Basis = aktueller
       // Kurs setzen (zeigt dann neutral "0%" statt eines falschen Werts).
       base: base ?? rate ?? 0.0,
+      target: target,
     );
   }
 
@@ -148,15 +237,29 @@ class ShardItem {
   /// Allzeithoch-Backend: bei normalen Items die Material-ID, bei
   /// Custom-Items der Anzeigename. MUSS mit extractItemKey() in
   /// worker.js übereinstimmen (siehe opapp-shards-api Repo)!
+  ///
+  /// ⚠️ Absichtlich NICHT um "target" erweitert (siehe Redcoins-
+  /// Update-Kommentar oben in der Datei) – der Worker kennt "target"
+  /// nach aktuellem Stand nicht, eine Änderung hier ohne passende
+  /// Worker-Anpassung würde den Abgleich komplett brechen statt nur
+  /// ein (unwahrscheinliches) Kollisions-Risiko zu lösen.
   String get athKey => material.isNotEmpty ? material : displayName;
+
+  /// Anzeigename der Währung dieses Items, z.B. "OPShards" oder
+  /// "RedCoins". Siehe currencyLabelFor() oben.
+  String get currencyLabel => currencyLabelFor(target);
+
+  /// Akzentfarbe der Währung dieses Items. Siehe currencyColorFor() oben.
+  Color get currencyColor => currencyColorFor(target);
 
   static String _fmt(double v) =>
       v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
-  /// z.B. "8.56 OPShards"
-  String get displayRate => '${_fmt(rate)} OPShards';
-  /// z.B. "8 OPShards"
-  String get displayBase => '${_fmt(base)} OPShards';
+  /// z.B. "8.56 OPShards" oder "12.40 RedCoins" – Einheit richtet sich
+  /// jetzt nach der Währung des Items (siehe currencyLabel).
+  String get displayRate => '${_fmt(rate)} $currencyLabel';
+  /// z.B. "8 OPShards" oder "10 RedCoins"
+  String get displayBase => '${_fmt(base)} $currencyLabel';
   /// z.B. "+7.0%" oder "-3.2%"
   String get displayChange {
     final pct = changePercent * 100;
@@ -176,7 +279,9 @@ class ShardRates {
   ShardItem? get first => items.isNotEmpty ? items.first : null;
 
   /// Item mit dem aktuell besten Kurs (höchster Aufschlag auf den
-  /// Basiswert) – wird im Dashboard-Banner angezeigt.
+  /// Basiswert) – wird im Dashboard-Banner angezeigt. Vergleicht
+  /// bewusst währungsübergreifend (höchste prozentuale Abweichung
+  /// zählt, unabhängig davon ob OPShards oder RedCoins).
   ShardItem? get best {
     if (items.isEmpty) return null;
     return items.reduce((a, b) => a.changePercent >= b.changePercent ? a : b);
