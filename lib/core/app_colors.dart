@@ -59,6 +59,15 @@ abstract class AppColors {
   // ← Neue Sektion hier ergänzen:
   // static const Color sectionStats = Color(0xFFFF7675); // Rot – Statistiken
 
+  // ── Wertstoffhändler-Währungsfarben (Redcoins-Update) ─────
+  // Bestimmen die Akzentfarbe je Server-Währung im Wertstoffhändler
+  // (siehe _currencyColors in shard_rate.dart, wo diese Farben pro
+  // "target"-Wert aus /merchant/rates aufgelöst werden – mit Fallback
+  // auf AppColors.accent für noch unbekannte künftige Währungen).
+  // Neue Server-Währung? → hier UND in shard_rate.dart ergänzen.
+  static const Color currencyOpshards = Color(0xFF7C5CF6); // Lila – OPShards (= accent, unverändert)
+  static const Color currencyRedcoins = Color(0xFFE74C3C); // Rot  – RedCoins (bewusst abgesetzt von error/sellColor)
+
   // ── Semantische Farben ────────────────────────────────────
   // Diese Farben haben eine feste Bedeutung – nicht für Design verwenden.
   static const Color success = Color(0xFF00B894); // ✓ Erfolg, positiv, kaufen
