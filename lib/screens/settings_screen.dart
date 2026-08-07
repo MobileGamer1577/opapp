@@ -30,24 +30,32 @@
 //      serviceStatus, siehe service_status_screen.dart) – zeigt den
 //      Live-Status (Online/Offline + Ping) aller von der App
 //      genutzten APIs (OPSUCHT, mc-api.io, eigenes Shards-Backend).
+//
+//  ÄNDERUNGEN (Redcoins-Update):
+//    - "Erscheinungsbild"-Beschreibung ist jetzt ein kurzer FESTER
+//      Text statt live nur den aktuellen Zahlenformat-Wert zu zeigen.
+//      Grund: seit dem Kursverlauf- und Redcoins-Update stecken dort
+//      inzwischen 3 unabhängige Optionen (Zahlenformat, Kursverlauf-
+//      Graph, Währungsfarben) – ein einzeiliger Live-Wert konnte immer
+//      nur EINE davon zeigen, was so aussah, als gäbe es nur diese
+//      eine Einstellung. Jetzt gleiches Muster wie "Über"/
+//      "Dienstverfügbarkeit": ein knapper, immer gleicher
+//      Überblickssatz statt eines Live-Werts.
+//    - Dadurch wird numberFormatProvider hier nicht mehr gebraucht →
+//      SettingsScreen ist jetzt StatelessWidget statt ConsumerWidget.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_colors.dart';
-import '../core/app_format.dart';
 import '../core/app_router.dart';
-import '../data/repositories/number_format_repository.dart';
 import '../widgets/app_background.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formatMode = ref.watch(numberFormatProvider);
-
+  Widget build(BuildContext context) {
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -63,14 +71,12 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _showPlaceholder(context),
             ),
             const SizedBox(height: 12),
-            // ✅ Eigener Screen – Beschreibung zeigt live den aktuell
-            // aktiven Zahlenformat-Modus an.
+            // ✅ Eigener Screen – fester Überblickssatz statt eines
+            // einzelnen Live-Werts (siehe Changelog oben).
             _SettingsCard(
               icon: Icons.palette_outlined,
               title: 'Erscheinungsbild',
-              description: formatMode == NumberFormatMode.compact
-                  ? 'Kompakte Zahlen – z.B. 40 Mio. \$'
-                  : 'Standard – z.B. 40.000.000 \$',
+              description: 'Zahlenformat, Kursverlauf & Wertstoffhändler-Farben.',
               color: AppColors.sectionShards,
               onTap: () => context.push(AppRoutes.appearance),
             ),
