@@ -24,6 +24,18 @@
 //      einer Dopplung von "Gebot" mit demselben Wert (siehe
 //      auctions_screen.dart). Falls die API später ein eigenes Feld
 //      dafür liefert (z.B. "hasBid"/"bidCount"), hier ersetzen.
+//
+//  ÄNDERUNGEN (Auktionshaus-Icon-Update):
+//    - NEU: material – rohe Material-ID aus item.material (z.B.
+//      "NETHERITE_HOE"), leer bei Items ohne dieses Feld. Wird für
+//      zwei Dinge gebraucht: 1) lokaler Icon-Fallback im Detail-Sheet
+//      (assets/icons/minecraft/minecraft_<material>.png, siehe
+//      network_icon.dart), 2) Deutsch/Englisch-Suche (siehe
+//      search_translations.dart).
+//    - NEU: icon – optionale Icon-URL aus item.icon. Ist NICHT bei
+//      jedem Item vorhanden (bestätigt per Beispiel-Daten: manche
+//      Items liefern nur "material", kein "icon") – dann greift im
+//      Detail-Sheet der lokale Asset-Fallback über NetworkIcon.
 // ═══════════════════════════════════════════════════════════════
 
 /// Repräsentiert eine laufende Auktion im OPSUCHT Auktionshaus
@@ -35,6 +47,12 @@ class AuctionItem {
   final double currentBid;
   final double? buyNowPrice;
   final int amount;
+
+  /// Rohe Material-ID (z.B. "NETHERITE_HOE"), leer wenn nicht geliefert.
+  final String material;
+
+  /// Icon-URL, falls von der API geliefert (nicht bei jedem Item vorhanden).
+  final String? icon;
 
   /// Beginn der Auktion. null = konnte aus der API nicht ausgelesen werden.
   final DateTime? startTime;
@@ -57,6 +75,8 @@ class AuctionItem {
     required this.currentBid,
     this.buyNowPrice,
     required this.amount,
+    required this.material,
+    this.icon,
     required this.startTime,
     required this.endsAt,
     required this.sellerId,
@@ -81,6 +101,10 @@ class AuctionItem {
     final amount = (itemData['amount'] as num?)?.toInt()
                 ?? (json['amount']    as num?)?.toInt()
                 ?? 1;
+
+    // ── Material + Icon (Auktionshaus-Icon-Update) ──────────
+    final material = itemData['material']?.toString() ?? '';
+    final icon = itemData['icon']?.toString();
 
     // Lore: Liste, leere Strings rausfiltern
     final lore = _parseStringList(itemData['lore'] ?? json['lore'])
@@ -136,6 +160,8 @@ class AuctionItem {
                 ?? (json['buyNow']          as num?)?.toDouble()
                 ?? (json['buy_now']         as num?)?.toDouble(),
       amount:      amount,
+      material:    material,
+      icon:        icon,
       startTime:   startTime,
       endsAt:      endsAt,
       sellerId:    sellerId,
