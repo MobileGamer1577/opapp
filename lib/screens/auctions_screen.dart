@@ -39,6 +39,23 @@
 //      exakter Zeichenvergleich, Bindestrich != Leerzeichen → keine
 //      Treffer). Betrifft Suchbegriff UND Item-Name gleichermaßen,
 //      funktioniert also in beide Richtungen.
+//
+//  ÄNDERUNGEN (Auktionshaus-Icon-Update):
+//    - Hauptliste (_AuctionCard) zeigt weiterhin bewusst KEIN Icon
+//      (bleibt schlank/schnell) – unverändert.
+//    - NEU: Detail-Sheet zeigt jetzt ein Icon oben links neben dem
+//      Titel: 1) Netzwerk-URL aus item.icon, falls vorhanden,
+//      2) sonst lokales Minecraft-Asset über item.material, 3) sonst
+//      generisches Fallback-Icon (siehe NetworkIcon in
+//      widgets/network_icon.dart). Titel ist jetzt mehrzeilig
+//      (maxLines: 2), damit auch lange Namen vollständig lesbar sind.
+//
+//  ÄNDERUNGEN (Such-Mapping-Update):
+//    - NEU: Deutsche Sucheingaben (z.B. "Diamant") finden jetzt auch
+//      Items mit englischem Namen/Material (z.B. "Diamond Sword") –
+//      siehe matchesWithTranslation() in data/search_translations.dart.
+//      Ergänzt die bisherige Bindestrich-Normalisierung, ersetzt sie
+//      nicht.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -51,6 +68,7 @@ import '../data/repositories/player_name_repository.dart';
 import '../data/repositories/number_format_repository.dart';
 import '../data/models/auction_item.dart';
 import '../data/models/auction_category.dart';
+import '../data/search_translations.dart';
 import '../widgets/app_background.dart';
 import '../widgets/network_icon.dart';
 
@@ -91,6 +109,22 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen> {
 
   void _onSelectSub(String? sub) {
     setState(() => _selectedSubCategory = sub);
+  }
+
+  /// Prüft ob ein Auktions-Item auf den Suchbegriff passt: erst die
+  /// bisherige Bindestrich-normalisierte direkte Suche, dann
+  /// zusätzlich die Deutsch/Englisch-Erweiterung gegen Name UND
+  /// Material (siehe search_translations.dart).
+  bool _matchesQuery(AuctionItem item) {
+    if (_query.isEmpty) return true;
+    if (_normalizeForSearch(item.itemName).contains(_normalizeForSearch(_query))) {
+      return true;
+    }
+    if (matchesWithTranslation(_query, item.itemName)) return true;
+    if (item.material.isNotEmpty && matchesWithTranslation(_query, item.material)) {
+      return true;
+    }
+    return false;
   }
 
   /// Prüft ob ein Auktions-Item zur aktuellen Filter-Auswahl passt.
@@ -208,9 +242,7 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen> {
               child: auctAsync.when(
                 data: (items) {
                   final filtered = items.where((item) {
-                    final matchQ = _query.isEmpty ||
-                        _normalizeForSearch(item.itemName)
-                            .contains(_normalizeForSearch(_query));
+                    final matchQ = _matchesQuery(item);
                     final matchC = _matchesCategory(item, groups);
                     return matchQ && matchC;
                   }).toList();
@@ -410,6 +442,8 @@ class _SubChip extends StatelessWidget {
 
 // ─── Auktions-Karte ──────────────────────────────────────────
 // ConsumerWidget wegen playerNameProvider + numberFormatProvider
+// Bewusst OHNE Icon (siehe Auktionshaus-Icon-Update oben) – bleibt
+// schlank, Icon gibt's nur im Detail-Sheet.
 
 class _AuctionCard extends ConsumerWidget {
   final AuctionItem item;
@@ -652,26 +686,60 @@ class _AuctionDetailSheet extends ConsumerWidget {
               ),
             ),
 
-            // ─ Titel ───────────────────────────────────────
-            Text(
-              item.amount > 1
-                  ? '${item.itemName} \u00d7${item.amount}'
-                  : item.itemName,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                categoryLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.accent,
+            // ─ Icon + Titel (Auktionshaus-Icon-Update) ────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.accent.withOpacity(0.25)),
+                  ),
+                  child: Center(
+                    child: NetworkIcon(
+                      url: item.icon,
+                      size: 36,
+                      assetFallback: item.material.isNotEmpty
+                          ? minecraftAssetPath(item.material)
+                          : null,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.amount > 1
+                            ? '${item.itemName} \u00d7${item.amount}'
+                            : item.itemName,
+                        style: theme.textTheme.titleLarge,
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          categoryLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 22),
 
