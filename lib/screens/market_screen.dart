@@ -10,6 +10,12 @@
 //    - Kategorie-Chips jetzt mit echten Kategorien + Icon (/market/categories)
 //    - Tap auf Item öffnet Detail-Sheet mit aktiven Angeboten
 //      (Preisverlauf folgt später, siehe Markierung in _MarketItemSheet)
+//
+//  ÄNDERUNGEN (Such-Mapping-Update):
+//    - NEU: Deutsche Sucheingaben (z.B. "Diamant") finden jetzt auch
+//      Items mit englischem Namen/Material (z.B. "Diamond Sword") –
+//      /market/items liefert alle Namen nur auf Englisch, siehe
+//      matchesWithTranslation() in data/search_translations.dart.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -19,6 +25,7 @@ import '../core/app_format.dart';
 import '../data/repositories/market_repository.dart';
 import '../data/models/market_item.dart';
 import '../data/models/market_category.dart';
+import '../data/search_translations.dart';
 import '../widgets/app_background.dart';
 
 class MarketScreen extends ConsumerStatefulWidget {
@@ -37,6 +44,16 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  /// Prüft ob ein Markt-Item auf den Suchbegriff passt – direkter
+  /// Treffer gegen den (englischen) Anzeigenamen ODER die deutsch/
+  /// englisch-Erweiterung gegen Name UND Material.
+  bool _matchesQuery(MarketItem item) {
+    if (_query.isEmpty) return true;
+    if (matchesWithTranslation(_query, item.name)) return true;
+    if (matchesWithTranslation(_query, item.material)) return true;
+    return false;
   }
 
   @override
@@ -81,8 +98,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
               child: marketAsync.when(
                 data: (items) {
                   final filtered = items.where((item) {
-                    final matchQ = _query.isEmpty ||
-                        item.name.toLowerCase().contains(_query.toLowerCase());
+                    final matchQ = _matchesQuery(item);
                     final matchC = _category == null || item.category == _category;
                     return matchQ && matchC;
                   }).toList();
