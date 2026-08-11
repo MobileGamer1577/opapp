@@ -28,6 +28,17 @@
 //      aktiviert (Standard: an) – siehe currency_color_repository.dart.
 //      Der Kurs-Text bleibt weiterhin grün/rot nach Trend (über/unter
 //      Basis), unabhängig von der Währungsfarbe.
+//
+//  ÄNDERUNGEN (Server-Status-Update):
+//    - NEU: Server-Status-Zeile direkt unter dem Header, oberhalb vom
+//      Live-Kurs-Banner ("🟢 Online • X Spieler" / "🔴 Offline").
+//      Tippbar → öffnet den neuen Server-Info-Screen (Releasedatum,
+//      Geburtstags-Countdown, Spieler-Rekord). Live-Status kommt
+//      direkt von mc-api.io (serverStatusProvider, siehe
+//      server_status_repository.dart), automatischer Refresh alle 30s.
+//    - Kachel 4 "Hilfe & Support" → "Tools & Hilfe" (Titel + Untertitel),
+//      da dort jetzt auch der neue Wertstoff-Rechner zu finden ist –
+//      Route/Ziel-Screen unverändert (AppRoutes.help).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -37,7 +48,9 @@ import '../core/app_colors.dart';
 import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/currency_color_repository.dart';
+import '../data/repositories/server_status_repository.dart';
 import '../data/models/shard_rate.dart';
+import '../data/models/server_status.dart';
 import '../widgets/app_background.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -48,6 +61,7 @@ class DashboardScreen extends ConsumerWidget {
     final theme         = Theme.of(context);
     final shardAsync    = ref.watch(shardRateProvider);
     final colorsEnabled = ref.watch(currencyColorProvider);
+    final statusAsync   = ref.watch(serverStatusProvider);
 
     return AppBackground(
       child: Scaffold(
@@ -93,7 +107,18 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 14),
+
+              // ─── Server-Status-Zeile (NEU) ──────────────────
+              // Live-Status direkt von mc-api.io – tippbar zur
+              // Server-Info-Seite (Releasedatum, Geburtstags-
+              // Countdown, Spieler-Rekord).
+              _ServerStatusRow(
+                status: statusAsync.value,
+                hasError: statusAsync.hasError,
+                onTap: () => context.push(AppRoutes.serverInfo),
+              ),
+              const SizedBox(height: 18),
 
               // ─── Live-Kurs Banner ──────────────────────────
               // Zeigt das Item mit dem aktuell besten Kurs (höchster
@@ -153,16 +178,80 @@ class DashboardScreen extends ConsumerWidget {
                 onTap:    () => context.push(AppRoutes.shards),
               ),
               const SizedBox(height: 10),
+              // ✅ Kachel 4 (Server-Status-Update): "Hilfe & Support"
+              // → "Tools & Hilfe", da dort jetzt auch der neue
+              // Wertstoff-Rechner zu finden ist. Ziel-Screen
+              // unverändert (help_screen.dart, AppRoutes.help).
               _FeatureCard(
                 icon:     Icons.help_rounded,
                 color:    AppColors.sectionHelp,
-                title:    'Hilfe & Support',
-                subtitle: 'Commands \u2022 Regelwerk \u2022 Restriktionen',
+                title:    'Tools & Hilfe',
+                subtitle: 'Rechner \u2022 Commands \u2022 Regelwerk',
                 onTap:    () => context.push(AppRoutes.help),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Server-Status-Zeile ──────────────────────────────────────
+
+class _ServerStatusRow extends StatelessWidget {
+  final ServerStatus? status;
+  final bool hasError;
+  final VoidCallback onTap;
+  const _ServerStatusRow({
+    required this.status,
+    required this.hasError,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final online = status?.online ?? false;
+
+    final Color dotColor;
+    final String label;
+    if (hasError) {
+      dotColor = AppColors.darkTextHint;
+      label = 'Status unbekannt';
+    } else if (status == null) {
+      dotColor = AppColors.darkTextHint;
+      label = 'Wird geladen \u2026';
+    } else if (online) {
+      dotColor = AppColors.success;
+      label = 'Online \u2022 ${status!.onlinePlayers} Spieler';
+    } else {
+      dotColor = AppColors.error;
+      label = 'Offline';
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color:      AppColors.darkTextSecondary,
+              fontSize:   13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          const Icon(Icons.chevron_right_rounded,
+              color: AppColors.darkTextHint, size: 18),
+        ],
       ),
     );
   }
