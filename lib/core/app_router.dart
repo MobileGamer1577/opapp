@@ -24,6 +24,14 @@
 //    - Neue Route AppRoutes.serviceStatus → ServiceStatusScreen
 //      (erreichbar über die "Dienstverfügbarkeit"-Karte, vormals
 //      "Speicher", im Einstellungen-Screen)
+//
+//  ÄNDERUNGEN (Server-Status-Update):
+//    - Neue Route AppRoutes.serverInfo → ServerInfoScreen (Live-
+//      Status, Geburtstags-Countdown, Spieler-Rekord – erreichbar
+//      über die Server-Status-Zeile auf dem Dashboard)
+//    - Neue Route AppRoutes.calculator → ShardCalculatorScreen
+//      (erreichbar über den Rechner-Button im Wertstoffhändler-
+//      Screen UND als erste Karte im "Tools & Hilfe"-Screen)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +47,8 @@ import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/appearance_screen.dart';
 import '../screens/service_status_screen.dart';
+import '../screens/server_info_screen.dart';
+import '../screens/shard_calculator_screen.dart';
 // ← Neue Screen-Imports hier hinzufügen
 
 // ── Route-Namen als Konstanten ────────────────────────────────
@@ -53,6 +63,8 @@ abstract class AppRoutes {
   static const about = '/about';
   static const appearance = '/appearance';
   static const serviceStatus = '/service-status';
+  static const serverInfo = '/server-info';
+  static const calculator = '/calculator';
   // ← Neue Route hier ergänzen
 }
 
@@ -103,6 +115,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.serviceStatus,
         builder: (_, __) => const ServiceStatusScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.serverInfo,
+        builder: (_, __) => const ServerInfoScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.calculator,
+        builder: (_, __) => const ShardCalculatorScreen(),
       ),
       // ← Neue GoRoute hier ergänzen, z.B.:
       // GoRoute(
