@@ -13,8 +13,8 @@
 //  ÄNDERUNGEN (Allzeithoch-Update):
 //    - NEU: Tap auf eine Item-Karte öffnet ein Detail-Sheet (gleiches
 //      Muster wie Markt/Auktionshaus) mit aktuellem Kurs UND dem
-//      Allzeithoch (Wert + Datum, aus dem eigenen opapp-shards-api
-//      Backend, siehe shard_all_time_high_repository.dart).
+//      Allzeithoch (Wert + Datum, aus dem eigenen opapp-api Backend,
+//      siehe shard_all_time_high_repository.dart).
 //    - Schlägt der Allzeithoch-Request fehl (Backend down, kein Netz),
 //      bleibt der Rest des Screens unberührt – nur das Sheet zeigt
 //      dann "Nicht verfügbar" statt eines Rekordwerts.
@@ -64,13 +64,24 @@
 //      Währung, siehe Kommentar in shard_all_time_high.dart).
 //    - _ShardItemCard ist jetzt ConsumerWidget statt StatelessWidget
 //      (watcht currencyColorProvider).
+//
+//  ÄNDERUNGEN (Server-Status-Update / Wertstoff-Rechner):
+//    - Reload-Button in der AppBar entfernt und durch einen Rechner-
+//      Button (Icons.calculate_outlined) ersetzt, der den neuen
+//      Wertstoff-Rechner öffnet (AppRoutes.calculator, siehe
+//      shard_calculator_screen.dart). Manuelles Neuladen der Kurse
+//      ist über diesen Screen damit nicht mehr direkt möglich –
+//      shardRateProvider lädt weiterhin automatisch neu, sobald der
+//      Screen erneut geöffnet wird (autoDispose).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../core/app_colors.dart';
 import '../core/app_format.dart';
+import '../core/app_router.dart';
 import '../data/repositories/shard_repository.dart';
 import '../data/repositories/shard_all_time_high_repository.dart';
 import '../data/repositories/shard_history_repository.dart';
@@ -95,8 +106,9 @@ class ShardsScreen extends ConsumerWidget {
           title: const Text('Wertstoffhändler'),
           actions: [
             IconButton(
-              icon:      const Icon(Icons.refresh),
-              onPressed: () => ref.invalidate(shardRateProvider),
+              icon:      const Icon(Icons.calculate_outlined),
+              tooltip:   'Wertstoff-Rechner',
+              onPressed: () => context.push(AppRoutes.calculator),
             ),
           ],
         ),
@@ -405,7 +417,7 @@ class _ShardDetailSheetState extends ConsumerState<_ShardDetailSheet> {
           ),
           const SizedBox(height: 12),
 
-          // ─ Allzeithoch (aus dem opapp-shards-api Backend) ──
+          // ─ Allzeithoch (aus dem opapp-api Backend) ──
           // NEU (Redcoins-Update): displayRateFor(item.currencyLabel)
           // statt displayRate – die ATH-Daten kennen selbst keine
           // Währung (siehe Kommentar in shard_all_time_high.dart), die
