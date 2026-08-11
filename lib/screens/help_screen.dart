@@ -1,3 +1,24 @@
+// ═══════════════════════════════════════════════════════════════
+//  help_screen.dart – "Tools & Hilfe"-Screen
+//
+//  ✅ HIER ÄNDERN: Karten ergänzen/anpassen
+//  ❌ NICHT ÄNDERN: Klassenname HelpScreen / Dateiname (bewusst
+//                   unverändert gelassen – nur Anzeigetexte ändern
+//                   sich, siehe Minimal-Diff-Prinzip)
+//
+//  ÄNDERUNGEN (Server-Status-Update / Tools-Umbau):
+//    - Screen-Titel "Hilfe & Support" → "Tools & Hilfe"
+//    - NEU: Karte "Wertstoff-Rechner" an ERSTER Stelle, öffnet den
+//      neuen Rechner (AppRoutes.calculator, siehe
+//      shard_calculator_screen.dart). Die vier bisherigen Karten
+//      (Commands, Regelwerk, Restriktionen, Website) bleiben in
+//      ihrer bisherigen Reihenfolge darunter bestehen.
+//    - NEU: Regelwerk- und Website-Karte (externe Links) zeigen jetzt
+//      ein kleines "öffnet extern"-Icon (Icons.open_in_new) neben dem
+//      Titel – Commands/Restriktionen bleiben ohne, da reine In-App-
+//      Navigation.
+// ═══════════════════════════════════════════════════════════════
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,10 +38,20 @@ class HelpScreen extends ConsumerWidget {
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Hilfe & Support')),
+        appBar: AppBar(title: const Text('Tools & Hilfe')),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ─── Wertstoff-Rechner (NEU, an erster Stelle) ─────
+            _HelpCard(
+              icon: Icons.calculate_outlined,
+              title: 'Wertstoff-Rechner',
+              description: 'Preise, Umrechnung & Ertrag berechnen.',
+              color: AppColors.accent,
+              onTap: () => context.push(AppRoutes.calculator),
+            ),
+            const SizedBox(height: 12),
+
             // ─── Schnellzugriff-Karten ─────────────────────────
             _HelpCard(
               icon: Icons.terminal_outlined,
@@ -35,6 +66,7 @@ class HelpScreen extends ConsumerWidget {
               title: 'Regelwerk',
               description: 'Alle Server-Regeln auf einen Blick.',
               color: AppColors.info,
+              isExternal: true,
               onTap: () => _openUrl(context, ApiConstants.rulesUrl),
             ),
             const SizedBox(height: 12),
@@ -51,6 +83,7 @@ class HelpScreen extends ConsumerWidget {
               title: 'Zur OPSUCHT Website',
               description: 'Offizielle Website, Neuigkeiten & mehr.',
               color: AppColors.darkTextSecondary,
+              isExternal: true,
               onTap: () => _openUrl(context, ApiConstants.websiteUrl),
             ),
           ],
@@ -160,12 +193,18 @@ class _HelpCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
+  /// ✅ NEU (Server-Status-Update): zeigt ein kleines "öffnet extern"-
+  /// Icon neben dem Titel, für Karten die einen externen Link öffnen
+  /// (Regelwerk, Website) statt in der App zu navigieren.
+  final bool isExternal;
+
   const _HelpCard({
     required this.icon,
     required this.title,
     required this.description,
     required this.color,
     required this.onTap,
+    this.isExternal = false,
   });
 
   @override
@@ -192,7 +231,21 @@ class _HelpCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: theme.textTheme.titleMedium),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(title, style: theme.textTheme.titleMedium),
+                        ),
+                        if (isExternal) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.open_in_new,
+                            size: 14,
+                            color: AppColors.darkTextHint,
+                          ),
+                        ],
+                      ],
+                    ),
                     Text(description, style: theme.textTheme.bodyMedium),
                   ],
                 ),
