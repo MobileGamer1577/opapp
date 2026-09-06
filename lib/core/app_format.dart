@@ -34,6 +34,12 @@
 //      stellen zurückgefallen ("1.101,50 $"). Eine Kürzung würde
 //      hier eine Genauigkeit vortäuschen, die nicht da ist.
 //
+//  ÄNDERUNGEN (Server-Info-Update):
+//    - NEU: time() – reine Uhrzeit ohne Datum ("14:32 Uhr"), für
+//      Anzeigen wie "Erreicht um HH:MM Uhr" (Tages-Peak im Server-
+//      Info-Screen), wo das Datum ("heute") schon aus dem Kontext
+//      klar ist und ein volles dateTime() nur unnötig lang wäre.
+//
 //  VERWENDUNG:
 //    AppFormat.currency(1500000)          → "1.500.000 $"
 //    AppFormat.currency(14.5, decimals:2) → "14,50 $"
@@ -44,6 +50,7 @@
 //    AppFormat.compactCurrency(1101.50)   → "1.101,50 $"  (Cent-Betrag!)
 //    AppFormat.currencyAuto(betrag, mode: mode)
 //    AppFormat.dateTime(dt)               → "18.06.2026, 08:08 Uhr"
+//    AppFormat.time(dt)                   → "08:08 Uhr"
 // ═══════════════════════════════════════════════════════════════
 
 /// Steuert, ob Preise ausgeschrieben (Standard) oder abgekürzt
@@ -151,6 +158,19 @@ abstract class AppFormat {
     final m = dt.month.toString().padLeft(2, '0');
     final y = dt.year.toString();
     return '$d.$m.$y';
+  }
+
+  /// Formatiert nur die Uhrzeit ohne Datum, z.B. "14:32 Uhr".
+  ///
+  /// ✅ NEU (Server-Info-Update): für Anzeigen wie "Erreicht um
+  /// HH:MM Uhr" (z.B. Tages-Peak), wo das Datum ("heute") schon aus
+  /// dem Kontext hervorgeht und ein volles dateTime() nur unnötig
+  /// lang wäre. Gleicher Hinweis wie bei dateTime(): vorher
+  /// .toLocal() aufrufen, falls das DateTime als UTC vom Server kommt.
+  static String time(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m Uhr';
   }
 
   // ── Interne Hilfsmethoden ─────────────────────────────────

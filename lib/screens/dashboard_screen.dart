@@ -39,6 +39,15 @@
 //    - Kachel 4 "Hilfe & Support" → "Tools & Hilfe" (Titel + Untertitel),
 //      da dort jetzt auch der neue Wertstoff-Rechner zu finden ist –
 //      Route/Ziel-Screen unverändert (AppRoutes.help).
+//
+//  ÄNDERUNGEN (Server-Info-Update):
+//    - _ServerStatusRow ist jetzt als abgerundeter Chip/Button
+//      gestaltet (Hintergrund + Rahmen leicht nach Status eingefärbt:
+//      Grün bei Online, Rot bei Offline, neutral bei Laden/Fehler),
+//      damit auf den ersten Blick klar ist, dass man tippen kann.
+//      Container+Material+InkWell für einen echten Tap-Ripple-Effekt
+//      – gleiches Muster wie _ShardItemCard in shards_screen.dart.
+//      Inhalt (Punkt, Text, Chevron) bleibt inhaltlich unverändert.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -109,10 +118,10 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
 
-              // ─── Server-Status-Zeile (NEU) ──────────────────
+              // ─── Server-Status-Zeile (Chip/Button-Design) ──
               // Live-Status direkt von mc-api.io – tippbar zur
               // Server-Info-Seite (Releasedatum, Geburtstags-
-              // Countdown, Spieler-Rekord).
+              // Countdown, Spieler-Rekord, Peak heute, Versionen).
               _ServerStatusRow(
                 status: statusAsync.value,
                 hasError: statusAsync.hasError,
@@ -197,7 +206,13 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-// ─── Server-Status-Zeile ──────────────────────────────────────
+// ─── Server-Status-Zeile (Chip/Button-Design) ─────────────────
+// ✅ NEU (Server-Info-Update): Container+Material+InkWell statt
+// nacktem GestureDetector – Hintergrund + Rahmen leicht nach Status
+// eingefärbt (dotColor mit niedriger Opacity), damit sofort erkennbar
+// ist, dass hier getippt werden kann. Gleiches Grundmuster wie
+// _ShardItemCard in shards_screen.dart (Farbe/Rahmen auf dem
+// Container, Ripple über transparentes Material+InkWell darüber).
 
 class _ServerStatusRow extends StatelessWidget {
   final ServerStatus? status;
@@ -229,29 +244,42 @@ class _ServerStatusRow extends StatelessWidget {
       label = 'Offline';
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color:      AppColors.darkTextSecondary,
-              fontSize:   13,
-              fontWeight: FontWeight.w600,
+    return Container(
+      decoration: BoxDecoration(
+        color: dotColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dotColor.withOpacity(0.22)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color:      AppColors.darkTextSecondary,
+                    fontSize:   13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded,
+                    color: dotColor.withOpacity(0.7), size: 18),
+              ],
             ),
           ),
-          const Spacer(),
-          const Icon(Icons.chevron_right_rounded,
-              color: AppColors.darkTextHint, size: 18),
-        ],
+        ),
       ),
     );
   }

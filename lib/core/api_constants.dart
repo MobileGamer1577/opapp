@@ -32,6 +32,12 @@
 //      "opsucht.net" sondern "bc4.opsucht.iwmedia.ovh" (auf Wunsch).
 //    - NEU: serverPeak – Spieler-Rekord (höchste je gemessene
 //      Online-Spielerzahl + Datum) aus dem eigenen opapp-api Backend.
+//
+//  ÄNDERUNGEN (Server-Info-Update):
+//    - NEU: serverPeakToday – wie serverPeak, aber nur die höchste
+//      Online-Spielerzahl HEUTE (Kalendertag Europe/Berlin, siehe
+//      berlinDateString() im Worker). Gleiches JSON-Format wie
+//      serverPeak → ServerPeak.fromJson deckt beide ab.
 // ═══════════════════════════════════════════════════════════════
 
 class ApiConstants {
@@ -62,8 +68,8 @@ class ApiConstants {
   // ✅ Umbenannt von "opapp-shards-api" zu "opapp-api" (Server-
   // Status-Update) – deckt inzwischen mehr als nur Shard-Kurse ab.
   // Pollt selbstständig per Cron die OPSUCHT-API + mc-api.io und
-  // speichert Allzeithoch, Kursverlauf und den Spieler-Rekord – die
-  // App ruft hier NUR lesend ab, schreibt niemals selbst.
+  // speichert Allzeithoch, Kursverlauf, Tages-Peak und den Spieler-
+  // Rekord – die App ruft hier NUR lesend ab, schreibt niemals selbst.
   static const String _backendBaseUrl = 'https://opapp-api.px32.workers.dev';
 
   /// GET → Liste aller Allzeithochs, siehe ShardAllTimeHigh.fromJson
@@ -77,6 +83,11 @@ class ApiConstants {
   /// GET → Spieler-Rekord (höchste je gemessene Online-Spielerzahl +
   /// Datum), siehe ServerPeak.fromJson.
   static const String serverPeak = '$_backendBaseUrl/server/peak';
+
+  /// GET → Höchste Online-Spielerzahl HEUTE (Kalendertag Europe/Berlin,
+  /// siehe berlinDateString() im Worker) + Zeitpunkt. Gleiches JSON-
+  /// Format wie serverPeak – ServerPeak.fromJson passt für beide.
+  static const String serverPeakToday = '$_backendBaseUrl/server/peak/today';
 
   // ── Live-Serverstatus (mc-api.io) ──────────────────────────
   // ✅ HIER ÄNDERN: Server-Adresse. Bewusst "bc4.opsucht.iwmedia.ovh"

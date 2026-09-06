@@ -2,7 +2,8 @@
 //  server_info_screen.dart – Server-Info-Screen
 //
 //  ✅ HIER ÄNDERN: Kartendesign
-//  ❌ NICHT ÄNDERN: serverStatusProvider/serverPeakProvider-Aufrufe
+//  ❌ NICHT ÄNDERN: serverStatusProvider/serverPeakProvider/
+//                   serverPeakTodayProvider-Aufrufe
 //
 //  ÄNDERUNGEN (Server-Status-Update):
 //    - NEU: erreichbar über die Server-Status-Zeile auf dem
@@ -14,6 +15,27 @@
 //    - Countdown wird beim Öffnen berechnet und alle 60s aktualisiert
 //      (kein sekündlicher Timer nötig – ein Server-Geburtstag ist ein
 //      Datum, keine kurzfristige Deadline wie eine Auktion).
+//
+//  ÄNDERUNGEN (Server-Info-Update):
+//    - Screen jetzt mit 5 statt 3 Kacheln, in dieser Reihenfolge:
+//        1. Status & Auslastung – UNVERÄNDERT: reine Online-Zahl,
+//           bewusst KEIN "X/Y" (maxPlayers ist live geprüft immer
+//           nur onlinePlayers+1, keine echte Kapazität – siehe
+//           Kommentar in server_status.dart).
+//        2. NEU: Peak heute – höchste Online-Spielerzahl SEIT
+//           Mitternacht (Europe/Berlin), aus serverPeakTodayProvider
+//           (neuer Endpunkt /server/peak/today im opapp-api Worker).
+//        3. NEU: Unterstützte Versionen – aus status.versionRange
+//           (KEIN zusätzlicher Request, kommt aus demselben
+//           serverStatusProvider wie Kachel 1) + statische Zeile zur
+//           Farmwelt-Version (farmWorldVersion-Konstante, kommt NICHT
+//           aus der API, siehe server_status_repository.dart).
+//        4. Spieler-Rekord (All-Time) – unverändert, nur an Position
+//           4 statt 3 verschoben.
+//        5. Server gegründet – Countdown-Text zeigt jetzt zusätzlich
+//           die Jubiläums-Zahl ("...bis zum 8. Geburtstag" statt nur
+//           "...zum nächsten Jubiläum", siehe nextServerBirthdayNumber()
+//           in server_status_repository.dart).
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -50,18 +72,23 @@ class _ServerInfoScreenState extends ConsumerState<ServerInfoScreen> {
     super.dispose();
   }
 
+  /// ✅ NEU (Server-Info-Update): zeigt jetzt zusätzlich die Jubiläums-
+  /// Zahl (z.B. "8. Geburtstag" statt nur "nächstes Jubiläum") –
+  /// siehe nextServerBirthdayNumber().
   String _birthdayCountdownText() {
     final next = nextServerBirthday();
+    final number = nextServerBirthdayNumber();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final days = next.difference(today).inDays;
-    if (days == 0) return 'Heute ist der Geburtstag! \u{1F389}';
-    return 'Noch $days Tag${days == 1 ? '' : 'e'} bis zum n\u00e4chsten Jubil\u00e4um';
+    if (days == 0) return 'Heute ist der $number. Geburtstag! \u{1F389}';
+    return 'Noch $days Tag${days == 1 ? '' : 'e'} bis zum $number. Geburtstag';
   }
 
   @override
   Widget build(BuildContext context) {
     final statusAsync = ref.watch(serverStatusProvider);
+    final peakTodayAsync = ref.watch(serverPeakTodayProvider);
     final peakAsync = ref.watch(serverPeakProvider);
 
     return AppBackground(
@@ -71,7 +98,7 @@ class _ServerInfoScreenState extends ConsumerState<ServerInfoScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ─ Live-Status ────────────────────────────────
+            // ─ 1. Live-Status ────────────────────────────────
             statusAsync.when(
               data: (status) => _InfoCard(
                 icon: status.online ? Icons.circle : Icons.circle_outlined,
@@ -92,17 +119,62 @@ class _ServerInfoScreenState extends ConsumerState<ServerInfoScreen> {
             ),
             const SizedBox(height: 12),
 
-            // ─ Release-Datum + Countdown ────────────────────
-            _InfoCard(
-              icon: Icons.cake_outlined,
-              iconColor: AppColors.sectionShards,
-              label: 'Server gegründet',
-              value: AppFormat.date(serverReleaseDate),
-              sublabel: _birthdayCountdownText(),
+            // ─ 2. Peak heute (NEU) ────────────────────────────
+            // Höchste Online-Spielerzahl seit Mitternacht (Europe/
+            // Berlin) – neuer /server/peak/today-Endpunkt. Gleiches
+            // ServerPeak-Modell wie der All-Time-Rekord in Kachel 4,
+            // nur anderer Provider/Endpunkt.
+            peakTodayAsync.when(
+              data: (peak) => peak.hasRecord
+                  ? _InfoCard(
+                      icon: Icons.trending_up_rounded,
+                      iconColor: AppColors.sectionAuction,
+                      label: 'Peak heute',
+                      value: '${peak.playerCount} Spieler',
+                      sublabel:
+                          'Erreicht um ${AppFormat.time(peak.achievedAt!.toLocal())}',
+                    )
+                  : const _InfoCard(
+                      icon: Icons.trending_up_rounded,
+                      iconColor: AppColors.darkTextSecondary,
+                      label: 'Peak heute',
+                      value: 'Noch keine Daten',
+                      sublabel: 'Wird ab jetzt automatisch erfasst',
+                    ),
+              loading: () => const _InfoCardLoading(),
+              error: (_, __) => const _InfoCard(
+                icon: Icons.trending_up_rounded,
+                iconColor: AppColors.darkTextSecondary,
+                label: 'Peak heute',
+                value: 'Nicht verfügbar',
+              ),
             ),
             const SizedBox(height: 12),
 
-            // ─ Spieler-Rekord ─────────────────────────────
+            // ─ 3. Unterstützte Versionen (NEU) ────────────────
+            // Nutzt DENSELBEN statusAsync wie Kachel 1 – kein
+            // zusätzlicher Request nötig. Die "Farmwelten"-Zeile
+            // kommt nicht aus der API, siehe farmWorldVersion-
+            // Konstante in server_status_repository.dart.
+            statusAsync.when(
+              data: (status) => _InfoCard(
+                icon: Icons.layers_outlined,
+                iconColor: AppColors.info,
+                label: 'Unterstützte Versionen',
+                value: status.versionRange ?? 'Unbekannt',
+                sublabel: 'Farmwelten laufen auf der $farmWorldVersion',
+              ),
+              loading: () => const _InfoCardLoading(),
+              error: (_, __) => const _InfoCard(
+                icon: Icons.layers_outlined,
+                iconColor: AppColors.darkTextSecondary,
+                label: 'Unterstützte Versionen',
+                value: 'Nicht verfügbar',
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ─ 4. Spieler-Rekord (All-Time) ────────────────────
             peakAsync.when(
               data: (peak) => peak.hasRecord
                   ? _InfoCard(
@@ -127,6 +199,16 @@ class _ServerInfoScreenState extends ConsumerState<ServerInfoScreen> {
                 label: 'Spieler-Rekord',
                 value: 'Nicht verfügbar',
               ),
+            ),
+            const SizedBox(height: 12),
+
+            // ─ 5. Release-Datum + Countdown ────────────────────
+            _InfoCard(
+              icon: Icons.cake_outlined,
+              iconColor: AppColors.sectionShards,
+              label: 'Server gegründet',
+              value: AppFormat.date(serverReleaseDate),
+              sublabel: _birthdayCountdownText(),
             ),
           ],
         ),
