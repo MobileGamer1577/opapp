@@ -32,6 +32,16 @@
 //    - Neue Route AppRoutes.calculator → ShardCalculatorScreen
 //      (erreichbar über den Rechner-Button im Wertstoffhändler-
 //      Screen UND als erste Karte im "Tools & Hilfe"-Screen)
+//
+//  ÄNDERUNGEN (Markt-Update):
+//    - Neue Route AppRoutes.marketList → MarketListScreen
+//      (Item-Liste mit Suche, Kategorie-Filter und Sortierung).
+//      Optionale Query-Parameter: ?category=<Name> (Vorauswahl),
+//      ?focus=1 (Suchfeld direkt fokussieren). Pfad bitte immer
+//      über AppRoutes.marketListPath() bauen.
+//    - Neue Route AppRoutes.marketItem/:material → MarketItemScreen
+//      (Item-Detail als Vollbild-Seite mit Preisverlauf). Pfad bitte
+//      über AppRoutes.marketItemPath(material) bauen.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +49,8 @@ import 'package:go_router/go_router.dart';
 
 import '../screens/dashboard_screen.dart';
 import '../screens/market_screen.dart';
+import '../screens/market_list_screen.dart';
+import '../screens/market_item_screen.dart';
 import '../screens/auctions_screen.dart';
 import '../screens/shards_screen.dart';
 import '../screens/help_screen.dart';
@@ -55,6 +67,8 @@ import '../screens/shard_calculator_screen.dart';
 abstract class AppRoutes {
   static const dashboard = '/';
   static const market = '/market';
+  static const marketList = '/market/list';
+  static const marketItem = '/market/item';
   static const auctions = '/auctions';
   static const shards = '/shards';
   static const help = '/help';
@@ -66,6 +80,21 @@ abstract class AppRoutes {
   static const serverInfo = '/server-info';
   static const calculator = '/calculator';
   // ← Neue Route hier ergänzen
+
+  /// Pfad zur Markt-Liste, optional mit vorausgewählter Kategorie
+  /// und/oder fokussiertem Suchfeld.
+  static String marketListPath({String? category, bool focusSearch = false}) {
+    final params = <String, String>{};
+    if (category != null && category.isNotEmpty) params['category'] = category;
+    if (focusSearch) params['focus'] = '1';
+    if (params.isEmpty) return marketList;
+    return Uri(path: marketList, queryParameters: params).toString();
+  }
+
+  /// Pfad zum Detail-Screen eines Markt-Items (Material-ID, z.B.
+  /// "DIAMOND_BLOCK").
+  static String marketItemPath(String material) =>
+      '$marketItem/${Uri.encodeComponent(material)}';
 }
 
 // ── Router Provider ───────────────────────────────────────────
@@ -83,6 +112,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.market,
         builder: (_, __) => const MarketScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.marketList,
+        builder: (_, state) => MarketListScreen(
+          initialCategory: state.uri.queryParameters['category'],
+          autofocusSearch: state.uri.queryParameters['focus'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.marketItem}/:material',
+        builder: (_, state) => MarketItemScreen(
+          material: state.pathParameters['material'] ?? '',
+        ),
       ),
       GoRoute(
         path: AppRoutes.auctions,
