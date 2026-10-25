@@ -9,6 +9,7 @@
 //    /market/items        → alle Materialien mit Icon-URL (kein Preis!)
 //    /market/categories   → alle Kategorien mit Name + Icon
 //    /market/prices       → Kategorie → Material → [BUY, SELL] Preise
+//    /market/history/{m}  → Preisverlauf (HOURLY/DAILY/WEEKLY/MONTHLY)
 //    /auctions/active     → alle aktiven Auktionen (mit Enchants & Lore)
 //    /auctions/categories → Auktions-Kategorien
 //    /merchant/rates      → OPShard Wechselkurse
@@ -38,6 +39,11 @@
 //      Online-Spielerzahl HEUTE (Kalendertag Europe/Berlin, siehe
 //      berlinDateString() im Worker). Gleiches JSON-Format wie
 //      serverPeak → ServerPeak.fromJson deckt beide ab.
+//
+//  ÄNDERUNGEN (Markt-Update):
+//    - NEU: marketHistory(material) – Preisverlauf eines Items aus
+//      der OPSUCHT-API. Eine Antwort enthält alle Zeitreihen
+//      (HOURLY, DAILY, WEEKLY, MONTHLY), siehe market_history.dart.
 // ═══════════════════════════════════════════════════════════════
 
 class ApiConstants {
@@ -54,6 +60,12 @@ class ApiConstants {
   static const String marketItems      = '$baseUrl/market/items';
   static const String marketCategories = '$baseUrl/market/categories';
   static const String marketPrices     = '$baseUrl/market/prices';
+
+  /// GET → Preisverlauf eines Items (alle Zeitreihen in EINER Antwort),
+  /// siehe MarketHistory.fromJson. [material] ist die Material-ID
+  /// wie in MarketItem.material (z.B. "DIAMOND_BLOCK").
+  static String marketHistory(String material) =>
+      '$baseUrl/market/history/${Uri.encodeComponent(material)}';
 
   // ── Auktionshaus ──────────────────────────────────────────
   // /auctions         → gibt nur API-Dokumentation zurück (nicht verwenden)
