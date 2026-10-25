@@ -7,10 +7,24 @@
 //  HERKUNFT DER DATEN (siehe market_repository.dart):
 //    /market/prices liefert je Material genau 2 Einträge mit
 //    "orderSide": "BUY" oder "SELL". Sind 0 Angebote aktiv,
-//    liefert die API price: 0.0 → wird auch so 1:1 angezeigt
-//    (kein Ausblenden, keine Sonder-Texte).
+//    liefert die API price: 0.0 → das Modell speichert diesen Wert
+//    weiterhin 1:1 (keine Sonderbehandlung beim Parsen).
 //    Das Icon kommt separat aus /market/items (Lookup per Material).
+//
+//  ÄNDERUNGEN (Markt-Update):
+//    - NEU: totalOrders – Gesamtzahl aktiver Aufträge
+//      (BUY.activeOrders + SELL.activeOrders). Basis für die
+//      Sortierung "Meiste Aufträge" und die Anzeige "N Aufträge".
+//      Kommt aus /market/prices, es sind KEINE Einzelabfragen von
+//      /market/price/{material} nötig (gleiche Felder, ein Request).
+//    - NEU: hasBuyPrice / hasSellPrice – false, wenn die API 0.0
+//      liefert (keine aktiven Angebote auf dieser Seite).
+//    - NEU: displayBuyPrice / displaySellPrice – formatierter Preis
+//      mit zwei Nachkommastellen, bei fehlendem Preis ein "–" statt
+//      "0,00 $" (wie in der offiziellen App).
 // ═══════════════════════════════════════════════════════════════
+
+import '../../core/app_format.dart';
 
 class MarketItem {
   final String material;
@@ -90,4 +104,18 @@ class MarketItem {
 
   bool get hasBuyOrders  => buyOrders > 0;
   bool get hasSellOrders => sellOrders > 0;
+
+  /// Gesamtzahl aktiver Aufträge (Angebote + Kaufaufträge),
+  /// z.B. Dirt: 3.109 + 24 = 3.133.
+  int get totalOrders => buyOrders + sellOrders;
+
+  /// false, wenn die API 0.0 geliefert hat (keine aktiven Angebote).
+  bool get hasBuyPrice  => buyPrice > 0;
+  bool get hasSellPrice => sellPrice > 0;
+
+  /// z.B. "3,20 $" – oder "–", wenn kein Preis vorhanden ist.
+  String get displayBuyPrice =>
+      hasBuyPrice ? AppFormat.currency(buyPrice, decimals: 2) : '–';
+  String get displaySellPrice =>
+      hasSellPrice ? AppFormat.currency(sellPrice, decimals: 2) : '–';
 }
