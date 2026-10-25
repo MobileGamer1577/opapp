@@ -40,6 +40,12 @@
 //      Info-Screen), wo das Datum ("heute") schon aus dem Kontext
 //      klar ist und ein volles dateTime() nur unnötig lang wäre.
 //
+//  ÄNDERUNGEN (Rechner-Umbau):
+//    - NEU: number() – Menge OHNE Währungszeichen, mit Tausender-
+//      punkten und Komma, überflüssige Nullen werden entfernt
+//      ("1.256,64", "1.250"). Für Shards/RedCoins-Mengen im
+//      Wertstoff-Rechner (shard_calculator_screen.dart).
+//
 //  VERWENDUNG:
 //    AppFormat.currency(1500000)          → "1.500.000 $"
 //    AppFormat.currency(14.5, decimals:2) → "14,50 $"
@@ -49,6 +55,8 @@
 //    AppFormat.compactCurrency(1101)      → "1.101 $"     (NICHT glatt!)
 //    AppFormat.compactCurrency(1101.50)   → "1.101,50 $"  (Cent-Betrag!)
 //    AppFormat.currencyAuto(betrag, mode: mode)
+//    AppFormat.number(1256.64)            → "1.256,64"
+//    AppFormat.number(1250)               → "1.250"
 //    AppFormat.dateTime(dt)               → "18.06.2026, 08:08 Uhr"
 //    AppFormat.time(dt)                   → "08:08 Uhr"
 // ═══════════════════════════════════════════════════════════════
@@ -76,6 +84,33 @@ abstract class AppFormat {
     final grouped = _groupThousands(intPart);
     final result  = decPart.isEmpty ? grouped : '$grouped,$decPart';
     return '${isNegative ? '-' : ''}$result \$';
+  }
+
+  /// Formatiert eine Menge OHNE Währungszeichen (z.B. Shards oder
+  /// RedCoins): Punkte als Tausendertrenner, Komma als Dezimaltrenner,
+  /// höchstens [decimals] Nachkommastellen – überflüssige Nullen am
+  /// Ende entfallen (1250.00 → "1.250", 1256.60 → "1.256,6").
+  ///
+  /// ✅ NEU (Rechner-Umbau)
+  static String number(double value, {int decimals = 2}) {
+    var fixed = value.abs().toStringAsFixed(decimals);
+
+    // Nachkomma-Nullen entfernen ("1250.50" → "1250.5", "1250.00" → "1250")
+    if (fixed.contains('.')) {
+      fixed = fixed.replaceFirst(RegExp(r'0+$'), '');
+      if (fixed.endsWith('.')) fixed = fixed.substring(0, fixed.length - 1);
+    }
+
+    // Kein "-0": negative Werte, die auf 0 runden, bekommen kein Vorzeichen.
+    final isNegative = value < 0 && fixed != '0';
+
+    final dotIndex = fixed.indexOf('.');
+    final intPart  = dotIndex == -1 ? fixed : fixed.substring(0, dotIndex);
+    final decPart  = dotIndex == -1 ? ''    : fixed.substring(dotIndex + 1);
+
+    final grouped = _groupThousands(intPart);
+    final result  = decPart.isEmpty ? grouped : '$grouped,$decPart';
+    return '${isNegative ? '-' : ''}$result';
   }
 
   /// Kurzschreibweise für große, GLATTE Beträge (siehe Changelog oben
