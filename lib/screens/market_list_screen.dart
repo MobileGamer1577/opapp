@@ -12,10 +12,15 @@
 //
 //  FUNKTIONEN:
 //    - Suche (Deutsch/Englisch, siehe search_translations.dart)
-//    - Kategorie-Chips (Auswahl wirkt lokal, ohne neue Navigation)
 //    - Sortieren über das Symbol neben der Suche (Bottom-Sheet),
 //      Standard "Meiste Aufträge" (BUY + SELL activeOrders)
 //    - Tap auf ein Item → Detail-Screen (Vollbild)
+//
+//  ÄNDERUNGEN (Markt-Update, Nachbesserung):
+//    - Die horizontale Kategorie-Chip-Leiste ist entfernt, damit die
+//      Liste so aufgeräumt aussieht wie in der offiziellen App. Die
+//      Kategorie wird über das Grid der Markt-Hauptseite gewählt
+//      (?category=<Name>) und bleibt in der Liste aktiv.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -25,12 +30,10 @@ import '../core/app_colors.dart';
 import '../core/app_router.dart';
 import '../data/repositories/market_repository.dart';
 import '../data/models/market_item.dart';
-import '../data/models/market_category.dart';
 import '../data/market_sort.dart';
 import '../data/search_translations.dart';
 import '../widgets/app_background.dart';
 import '../widgets/market_item_tile.dart';
-import '../widgets/network_icon.dart';
 
 class MarketListScreen extends ConsumerStatefulWidget {
   /// Vorausgewählte Kategorie (Name wie in /market/categories).
@@ -94,7 +97,6 @@ class _MarketListScreenState extends ConsumerState<MarketListScreen> {
   @override
   Widget build(BuildContext context) {
     final marketAsync     = ref.watch(marketProvider);
-    final categoriesAsync = ref.watch(marketCategoriesProvider);
     final theme = Theme.of(context);
 
     return AppBackground(
@@ -138,17 +140,6 @@ class _MarketListScreenState extends ConsumerState<MarketListScreen> {
             ),
             const SizedBox(height: 8),
 
-            // ─── Kategorie-Chips ────────────────────────────
-            categoriesAsync.when(
-              data: (categories) => _CategoryBar(
-                categories: categories,
-                selected:   _category,
-                onSelect:   (c) => setState(() => _category = c),
-              ),
-              loading: () => const SizedBox(height: 44),
-              error:   (_, __) => const SizedBox.shrink(),
-            ),
-
             // ─── Liste ──────────────────────────────────────
             Expanded(
               child: marketAsync.when(
@@ -182,7 +173,6 @@ class _MarketListScreenState extends ConsumerState<MarketListScreen> {
                       Expanded(
                         child: RefreshIndicator(
                           onRefresh: () async {
-                            ref.invalidate(marketCategoriesProvider);
                             try {
                               await ref.refresh(marketProvider.future);
                             } catch (_) {}
@@ -335,53 +325,6 @@ class _SortSheet extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─── Kategorie-Filter-Leiste ─────────────────────────────────
-
-class _CategoryBar extends StatelessWidget {
-  final List<MarketCategory> categories;
-  final String? selected;
-  final ValueChanged<String?> onSelect;
-
-  const _CategoryBar({
-    required this.categories,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection:  Axis.horizontal,
-        padding:          const EdgeInsets.symmetric(horizontal: 16),
-        itemCount:        categories.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          if (i == 0) {
-            return FilterChip(
-              label:      const Text('Alle'),
-              selected:   selected == null,
-              onSelected: (_) => onSelect(null),
-            );
-          }
-          final cat = categories[i - 1];
-          return FilterChip(
-            avatar: NetworkIcon(
-              url:      cat.icon,
-              size:     18,
-              fallback: Icons.category_outlined,
-            ),
-            label:      Text(cat.name),
-            selected:   selected == cat.name,
-            onSelected: (_) => onSelect(selected == cat.name ? null : cat.name),
-          );
-        },
       ),
     );
   }
