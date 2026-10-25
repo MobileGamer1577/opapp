@@ -10,6 +10,10 @@
 //  Markt-Liste verwendet – so sehen beide identisch aus. Die
 //  Navigation (Tap) kommt von außen über [onTap].
 //
+//  ÄNDERUNGEN (Markt-Update, Nachbesserung):
+//    - Kauf-/Verkaufspreise sind neutral (weiß) statt grün/rot, wie
+//      in der offiziellen App. "–" bei fehlendem Preis bleibt gedämpft.
+//
 //  Enthält außerdem formatCount() – Ganzzahlen mit Tausenderpunkt
 //  (3133 → "3.133"), auch vom Detail-Screen genutzt.
 // ═══════════════════════════════════════════════════════════════
@@ -101,14 +105,12 @@ class MarketItemTile extends StatelessWidget {
                     label:  'Kaufen',
                     text:   item.displayBuyPrice,
                     active: item.hasBuyPrice,
-                    color:  AppColors.buyColor,
                   ),
                   const SizedBox(height: 4),
                   _PriceLine(
                     label:  'Verkaufen',
                     text:   item.displaySellPrice,
                     active: item.hasSellPrice,
-                    color:  AppColors.sellColor,
                   ),
                 ],
               ),
@@ -123,12 +125,10 @@ class MarketItemTile extends StatelessWidget {
 class _PriceLine extends StatelessWidget {
   final String label, text;
   final bool active;
-  final Color color;
   const _PriceLine({
     required this.label,
     required this.text,
     required this.active,
-    required this.color,
   });
 
   @override
@@ -141,7 +141,7 @@ class _PriceLine extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color:      active ? color : AppColors.darkTextHint,
+            color:      active ? AppColors.darkTextPrimary : AppColors.darkTextHint,
             fontWeight: FontWeight.w700,
             fontSize:   14,
           ),
