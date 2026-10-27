@@ -39,6 +39,14 @@
 //      Tief/Hoch-Ausreißer würden die Linie sonst flach drücken – das
 //      Band wird deshalb an den sichtbaren Bereich gekappt.
 //    - Zeitstempel sind lokale Zeit (siehe market_history.dart).
+//
+//  ÄNDERUNGEN (Farben-Update):
+//    - "Sofort kaufen" / "Sofort verkaufen" (_PriceBox) sind jetzt
+//      neutral: kein grüner/roter Hintergrund, Rahmen und Preis mehr,
+//      stattdessen Weiß/Grau im Dark Theme (gleicher Stil wie die
+//      Statistik-Kacheln _StatTile). Der Parameter "color" der
+//      _PriceBox entfällt damit. Fehlt ein Preis ("–"), bleibt er
+//      wie bisher gedämpft (AppColors.darkTextHint).
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:math' as math;
@@ -190,7 +198,6 @@ class _MarketItemScreenState extends ConsumerState<MarketItemScreen> {
                 price:    item.displayBuyPrice,
                 sublabel: '${formatCount(item.buyOrders)} Angebote',
                 active:   item.hasBuyPrice,
-                color:    AppColors.buyColor,
               ),
             ),
             const SizedBox(width: 10),
@@ -200,7 +207,6 @@ class _MarketItemScreenState extends ConsumerState<MarketItemScreen> {
                 price:    item.displaySellPrice,
                 sublabel: '${formatCount(item.sellOrders)} Kaufaufträge',
                 active:   item.hasSellPrice,
-                color:    AppColors.sellColor,
               ),
             ),
           ],
@@ -234,17 +240,17 @@ class _MarketItemScreenState extends ConsumerState<MarketItemScreen> {
 }
 
 // ─── Preis-Box (Sofort kaufen / verkaufen) ───────────────────
+// Neutral (Farben-Update): Weiß/Grau im Dark Theme, kein Grün/Rot.
+// Gleicher Stil wie _StatTile weiter unten.
 
 class _PriceBox extends StatelessWidget {
   final String label, price, sublabel;
   final bool active;
-  final Color color;
   const _PriceBox({
     required this.label,
     required this.price,
     required this.sublabel,
     required this.active,
-    required this.color,
   });
 
   @override
@@ -253,9 +259,9 @@ class _PriceBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:        color.withOpacity(0.08),
+        color:        Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
-        border:       Border.all(color: color.withOpacity(0.2)),
+        border:       Border.all(color: Colors.white.withOpacity(0.07)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +271,7 @@ class _PriceBox extends StatelessWidget {
           Text(
             price,
             style: TextStyle(
-              color:      active ? color : AppColors.darkTextHint,
+              color:      active ? AppColors.darkTextPrimary : AppColors.darkTextHint,
               fontWeight: FontWeight.w800,
               fontSize:   22,
             ),
