@@ -17,6 +17,11 @@
 //      ein kleines "öffnet extern"-Icon (Icons.open_in_new) neben dem
 //      Titel – Commands/Restriktionen bleiben ohne, da reine In-App-
 //      Navigation.
+//
+//  ÄNDERUNGEN (Mobdex-Update):
+//    - NEU: Karte "Mobdex" an ZWEITER Stelle (direkt unter dem
+//      Wertstoff-Rechner), öffnet den Mobdex-Tracker für den
+//      Jägerjob (AppRoutes.mobdex, siehe mobdex_screen.dart).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -42,13 +47,23 @@ class HelpScreen extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ─── Wertstoff-Rechner (NEU, an erster Stelle) ─────
+            // ─── Wertstoff-Rechner (an erster Stelle) ──────────
             _HelpCard(
               icon: Icons.calculate_outlined,
               title: 'Wertstoff-Rechner',
               description: 'Preise, Umrechnung & Ertrag berechnen.',
               color: AppColors.accent,
               onTap: () => context.push(AppRoutes.calculator),
+            ),
+            const SizedBox(height: 12),
+
+            // ─── Mobdex (NEU, an zweiter Stelle) ───────────────
+            _HelpCard(
+              icon: Icons.pets_rounded,
+              title: 'Mobdex',
+              description: 'Jägerjob: Mobs abhaken, Cooldown & XP-Ziel.',
+              color: AppColors.sectionAuction,
+              onTap: () => context.push(AppRoutes.mobdex),
             ),
             const SizedBox(height: 12),
 
