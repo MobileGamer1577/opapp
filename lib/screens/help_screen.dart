@@ -61,7 +61,7 @@ class HelpScreen extends ConsumerWidget {
             _HelpCard(
               icon: Icons.pets_rounded,
               title: 'Mobdex',
-              description: 'Jägerjob: Mobs abhaken, Cooldown & XP-Ziel.',
+              description: 'Jägerjob: Mobs abhaken & Cooldown im Blick.',
               color: AppColors.sectionAuction,
               onTap: () => context.push(AppRoutes.mobdex),
             ),
