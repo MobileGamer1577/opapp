@@ -2,7 +2,7 @@
 //  mobdex_data.dart – Mob-Liste für den Mobdex (Jägerjob)
 //
 //  ✅ HIER ÄNDERN: Mobs/Biome ergänzen oder korrigieren, Cooldown-
-//                  Dauer (kMobdexCooldown), XP-Ziel (kHunterMilestoneXp)
+//                  Dauer (kMobdexCooldown)
 //  ❌ NICHT ÄNDERN: Klasse MobdexMob / Variablenname kMobdexMobs.
 //                   Der Mob-NAME ist zugleich der Speicher-Schlüssel
 //                   für den Fortschritt (SharedPreferences) – einen
@@ -11,9 +11,11 @@
 //
 //  NEUEN MOB ERGÄNZEN:
 //    Custom-Mob:  MobdexMob.custom('Name', 'Farmwelt', 'Biom1, Biom2'),
-//    Vanilla-Mob: MobdexMob.vanilla('Name', 'Overworld', 'Biom1, Biom2'),
-//  Mehrere Welten werden mit " / " getrennt ("Overworld / Nether") –
+//    Vanilla-Mob: MobdexMob.vanilla('Name', 'Farmwelt', 'Biom1, Biom2'),
+//  Mehrere Welten werden mit " / " getrennt ("Farmwelt / Nether") –
 //  der Welt-Filter im Mobdex-Screen arbeitet auf diesen Teilen.
+//  "Overworld" gibt es bewusst NICHT mehr: Auf dem Server ist die
+//  Overworld dasselbe wie die Farmwelt → einheitlich "Farmwelt".
 //
 //  QUELLE: Custom-Mobs mit Biomen aus dem OPSUCHT Wiki, Vanilla-Mobs
 //  mit Welt/Standard-Biomen (vom Projektinhaber geliefert).
@@ -24,18 +26,17 @@
 //      Klasse MobdexMob überführt (gleicher Inhalt, kein Map-Zugriff
 //      per String-Schlüssel mehr). kMobdexMobs enthält beide Gruppen
 //      zusammen, alphabetisch sortiert (Umlaute wie Grundbuchstaben).
+//    - Welten bereinigt: "Overworld" und "Farmwelt" sind auf dem Server
+//      dasselbe und wurden zu "Farmwelt" zusammengeführt.
+//    - XP-Meilenstein entfernt (gehört nicht in ein reines Mobdex).
 // ═══════════════════════════════════════════════════════════════
 
 /// ✅ HIER ÄNDERN: Dauer des Cooldowns nach vollständigem Abschluss.
 const Duration kMobdexCooldown = Duration(days: 21);
 
-/// ✅ HIER ÄNDERN: XP-Meilenstein im Jägerjob.
-const int kHunterMilestoneXp = 10000000;
-
 /// Welten, nach denen im Mobdex-Screen gefiltert werden kann.
 const List<String> kMobdexWorldFilters = [
   'Farmwelt',
-  'Overworld',
   'Nether',
   'End',
 ];
@@ -44,7 +45,7 @@ const List<String> kMobdexWorldFilters = [
 class MobdexMob {
   final String name;
 
-  /// Welt(en), z.B. "Farmwelt" oder "Overworld / Nether / End".
+  /// Welt(en), z.B. "Farmwelt" oder "Farmwelt / Nether / End".
   final String world;
 
   /// Biome bzw. Spawn-Orte als kommaseparierter Text.
@@ -57,7 +58,7 @@ class MobdexMob {
   const MobdexMob.vanilla(this.name, this.world, this.biomes)
       : isCustom = false;
 
-  /// Einzelne Welten, z.B. ["Overworld", "Nether", "End"].
+  /// Einzelne Welten, z.B. ["Farmwelt", "Nether", "End"].
   List<String> get worlds => world.split(' / ');
 
   /// Sortierschlüssel: klein geschrieben, Umlaute wie Grundbuchstaben,
@@ -114,104 +115,104 @@ const List<MobdexMob> _customMobs = [
 
 // ── Vanilla-Mobs (Welt + Standard-Biome) ──────────────────────
 const List<MobdexMob> _vanillaMobs = [
-  MobdexMob.vanilla('Axolotl', 'Overworld', 'Üppige Höhlen (Lush Caves)'),
+  MobdexMob.vanilla('Axolotl', 'Farmwelt', 'Üppige Höhlen (Lush Caves)'),
   MobdexMob.vanilla(
-      'Biene', 'Overworld', 'Blumenwiese, Ebene, Sonnenblumen-Ebene'),
+      'Biene', 'Farmwelt', 'Blumenwiese, Ebene, Sonnenblumen-Ebene'),
   MobdexMob.vanilla(
-      'Böe (Breeze)', 'Overworld', 'Priesterkammer / Trial Chambers'),
-  MobdexMob.vanilla('Creeper', 'Overworld', 'Überall (Nacht / Dunkelheit)'),
+      'Böe (Breeze)', 'Farmwelt', 'Priesterkammer / Trial Chambers'),
+  MobdexMob.vanilla('Creeper', 'Farmwelt', 'Überall (Nacht / Dunkelheit)'),
   MobdexMob.vanilla(
-      'Delfin', 'Overworld', 'Ozeane (außer Gefrorener Ozean)'),
+      'Delfin', 'Farmwelt', 'Ozeane (außer Gefrorener Ozean)'),
   MobdexMob.vanilla(
-      'Diener (Vindicator)', 'Overworld', 'Waldanwesen, Überfälle (Raids)'),
-  MobdexMob.vanilla('Dromedar', 'Overworld', 'Wüstendörfer'),
-  MobdexMob.vanilla('Eisbär', 'Overworld',
+      'Diener (Vindicator)', 'Farmwelt', 'Waldanwesen, Überfälle (Raids)'),
+  MobdexMob.vanilla('Dromedar', 'Farmwelt', 'Wüstendörfer'),
+  MobdexMob.vanilla('Eisbär', 'Farmwelt',
       'Verschneite Ebenen, Eisspitzen, Gefrorener Ozean'),
-  MobdexMob.vanilla('Eisengolem', 'Overworld', 'Dörfer, Außenposten'),
+  MobdexMob.vanilla('Eisengolem', 'Farmwelt', 'Dörfer, Außenposten'),
   MobdexMob.vanilla(
-      'Einwanderer (Trader)', 'Overworld', 'Spawnt zufällig beim Spieler'),
-  MobdexMob.vanilla('Enderman', 'Overworld / Nether / End',
+      'Einwanderer (Trader)', 'Farmwelt', 'Spawnt zufällig beim Spieler'),
+  MobdexMob.vanilla('Enderman', 'Farmwelt / Nether / End',
       'Überall, Wirrwald (Warped Forest), Das End'),
-  MobdexMob.vanilla('Ertrunkener', 'Overworld',
+  MobdexMob.vanilla('Ertrunkener', 'Farmwelt',
       'Ozeane, Flüsse, Unterwasser-Ruinen'),
-  MobdexMob.vanilla('Esel', 'Overworld', 'Ebenen, Savanne'),
-  MobdexMob.vanilla('Frosch', 'Overworld', 'Sumpf, Mangrovensumpf'),
-  MobdexMob.vanilla('Fuchs', 'Overworld', 'Taiga, Verschneite Taiga'),
+  MobdexMob.vanilla('Esel', 'Farmwelt', 'Ebenen, Savanne'),
+  MobdexMob.vanilla('Frosch', 'Farmwelt', 'Sumpf, Mangrovensumpf'),
+  MobdexMob.vanilla('Fuchs', 'Farmwelt', 'Taiga, Verschneite Taiga'),
   MobdexMob.vanilla('Ghast', 'Nether',
       'Nether-Ödland, Seelensand-Tal, Basaltdeltas'),
-  MobdexMob.vanilla('Großwächter', 'Overworld', 'Ozeanmonument'),
-  MobdexMob.vanilla('Gürteltier', 'Overworld', 'Savanne, Ödland (Badlands)'),
+  MobdexMob.vanilla('Großwächter', 'Farmwelt', 'Ozeanmonument'),
+  MobdexMob.vanilla('Gürteltier', 'Farmwelt', 'Savanne, Ödland (Badlands)'),
   MobdexMob.vanilla(
-      'Hexe', 'Overworld', 'Sumpfhütte, Überfälle, Nachts überall'),
+      'Hexe', 'Farmwelt', 'Sumpfhütte, Überfälle, Nachts überall'),
   MobdexMob.vanilla('Hoglin', 'Nether', 'Karmesinwald (Crimson Forest)'),
   MobdexMob.vanilla(
-      'Höhlenspinne', 'Overworld', 'Minenschächte (Mineshafts)'),
-  MobdexMob.vanilla('Huhn', 'Overworld', 'Grasbiome (Ebenen, Wälder)'),
+      'Höhlenspinne', 'Farmwelt', 'Minenschächte (Mineshafts)'),
+  MobdexMob.vanilla('Huhn', 'Farmwelt', 'Grasbiome (Ebenen, Wälder)'),
   MobdexMob.vanilla(
-      'Kabeljau', 'Overworld', 'Ozeane (Normal, Lauwarm, Kalt)'),
+      'Kabeljau', 'Farmwelt', 'Ozeane (Normal, Lauwarm, Kalt)'),
   MobdexMob.vanilla(
-      'Kaninchen', 'Overworld', 'Wüste, Verschneite Ebenen, Taiga'),
-  MobdexMob.vanilla('Katze', 'Overworld', 'Dörfer, Sumpfhütte'),
-  MobdexMob.vanilla('Kuh', 'Overworld', 'Grasbiome (Ebenen, Wälder)'),
+      'Kaninchen', 'Farmwelt', 'Wüste, Verschneite Ebenen, Taiga'),
+  MobdexMob.vanilla('Katze', 'Farmwelt', 'Dörfer, Sumpfhütte'),
+  MobdexMob.vanilla('Kuh', 'Farmwelt', 'Grasbiome (Ebenen, Wälder)'),
   MobdexMob.vanilla(
-      'Lachs', 'Overworld', 'Flüsse, Kalte / Gefrorene Ozeane'),
+      'Lachs', 'Farmwelt', 'Flüsse, Kalte / Gefrorene Ozeane'),
   MobdexMob.vanilla(
-      'Lama', 'Overworld', 'Windeingefurchte Hügel, Savanne'),
+      'Lama', 'Farmwelt', 'Windeingefurchte Hügel, Savanne'),
   MobdexMob.vanilla(
-      'Leuchttintenfisch', 'Overworld', 'Tiefe Unterwasser-Höhlen'),
+      'Leuchttintenfisch', 'Farmwelt', 'Tiefe Unterwasser-Höhlen'),
   MobdexMob.vanilla(
       'Lohe (Blaze)', 'Nether', 'Netherfestung (Nether Fortress)'),
   MobdexMob.vanilla(
-      'Magier (Evoker)', 'Overworld', 'Waldanwesen, Überfälle'),
+      'Magier (Evoker)', 'Farmwelt', 'Waldanwesen, Überfälle'),
   MobdexMob.vanilla(
       'Magmawürfel', 'Nether', 'Basaltdeltas, Netherfestung'),
-  MobdexMob.vanilla('Maultier', 'Overworld', 'Zucht (Pferd + Esel)'),
+  MobdexMob.vanilla('Maultier', 'Farmwelt', 'Zucht (Pferd + Esel)'),
   MobdexMob.vanilla(
-      'Mooshroom', 'Overworld', 'Pilzland (Mushroom Fields)'),
-  MobdexMob.vanilla('Nautilus', 'Overworld', 'Ozean / Angeln'),
-  MobdexMob.vanilla('Ozelot', 'Overworld', 'Dschungel'),
-  MobdexMob.vanilla('Panda', 'Overworld', 'Dschungel, Bambusdschungel'),
-  MobdexMob.vanilla('Papagei', 'Overworld', 'Dschungel'),
-  MobdexMob.vanilla('Pferd', 'Overworld', 'Ebenen, Savanne'),
+      'Mooshroom', 'Farmwelt', 'Pilzland (Mushroom Fields)'),
+  MobdexMob.vanilla('Nautilus', 'Farmwelt', 'Ozean / Angeln'),
+  MobdexMob.vanilla('Ozelot', 'Farmwelt', 'Dschungel'),
+  MobdexMob.vanilla('Panda', 'Farmwelt', 'Dschungel, Bambusdschungel'),
+  MobdexMob.vanilla('Papagei', 'Farmwelt', 'Dschungel'),
+  MobdexMob.vanilla('Pferd', 'Farmwelt', 'Ebenen, Savanne'),
   MobdexMob.vanilla('Piglin', 'Nether',
       'Karmesinwald, Nether-Ödland, Bastionsruinen'),
   MobdexMob.vanilla('Piglin-Barbar', 'Nether', 'Bastionsruinen'),
-  MobdexMob.vanilla('Plünderer (Pillager)', 'Overworld',
+  MobdexMob.vanilla('Plünderer (Pillager)', 'Farmwelt',
       'Außenposten, Patrouillen, Überfälle'),
-  MobdexMob.vanilla('Schaf', 'Overworld', 'Grasbiome'),
-  MobdexMob.vanilla('Schildkröte', 'Overworld', 'Strände'),
+  MobdexMob.vanilla('Schaf', 'Farmwelt', 'Grasbiome'),
+  MobdexMob.vanilla('Schildkröte', 'Farmwelt', 'Strände'),
   MobdexMob.vanilla(
-      'Schleim', 'Overworld', 'Sumpf, Schleim-Chunks (Tiefgaragen)'),
+      'Schleim', 'Farmwelt', 'Sumpf, Schleim-Chunks (Tiefgaragen)'),
   MobdexMob.vanilla(
       'Schreiter (Strider)', 'Nether', 'Lava-Ozeane im Nether'),
-  MobdexMob.vanilla('Schwein', 'Overworld', 'Grasbiome'),
+  MobdexMob.vanilla('Schwein', 'Farmwelt', 'Grasbiome'),
   MobdexMob.vanilla(
-      'Silberfischchen', 'Overworld', 'Festungen (Strongholds), Berge'),
-  MobdexMob.vanilla('Skelett', 'Overworld / Nether',
+      'Silberfischchen', 'Farmwelt', 'Festungen (Strongholds), Berge'),
+  MobdexMob.vanilla('Skelett', 'Farmwelt / Nether',
       'Überall (Dunkelheit), Seelensand-Tal'),
-  MobdexMob.vanilla('Endermite', 'Overworld / End',
+  MobdexMob.vanilla('Endermite', 'Farmwelt / End',
       'Spawnt beim Werfen von Enderperlen'),
-  MobdexMob.vanilla('Spinne', 'Overworld', 'Überall (Dunkelheit)'),
-  MobdexMob.vanilla('Sumpfskelett (Bogged)', 'Overworld',
+  MobdexMob.vanilla('Spinne', 'Farmwelt', 'Überall (Dunkelheit)'),
+  MobdexMob.vanilla('Sumpfskelett (Bogged)', 'Farmwelt',
       'Sumpf, Mangrovensumpf, Trial Chambers'),
-  MobdexMob.vanilla('Tintenfisch', 'Overworld', 'Flüsse, Ozeane'),
-  MobdexMob.vanilla('Tropenfisch', 'Overworld',
+  MobdexMob.vanilla('Tintenfisch', 'Farmwelt', 'Flüsse, Ozeane'),
+  MobdexMob.vanilla('Tropenfisch', 'Farmwelt',
       'Lauwarme / Warme Ozeane, Üppige Höhlen'),
-  MobdexMob.vanilla('Vertrockneter (Husk)', 'Overworld', 'Wüste'),
+  MobdexMob.vanilla('Vertrockneter (Husk)', 'Farmwelt', 'Wüste'),
   MobdexMob.vanilla(
-      'Verwüster (Ravager)', 'Overworld', 'Überfälle (Raids)'),
+      'Verwüster (Ravager)', 'Farmwelt', 'Überfälle (Raids)'),
   MobdexMob.vanilla(
-      'Wächter (Guardian)', 'Overworld', 'Ozeanmonument'),
-  MobdexMob.vanilla('Wärter (Warden)', 'Overworld',
+      'Wächter (Guardian)', 'Farmwelt', 'Ozeanmonument'),
+  MobdexMob.vanilla('Wärter (Warden)', 'Farmwelt',
       'Tiefes Dunkel (Deep Dark) / Antike Stadt'),
   MobdexMob.vanilla('Wither-Skelett', 'Nether', 'Netherfestung'),
   MobdexMob.vanilla(
-      'Wolf', 'Overworld', 'Wälder, Taiga, Savanne, Ödland'),
-  MobdexMob.vanilla('Wüstenzombie', 'Overworld', 'Wüste'),
-  MobdexMob.vanilla('Ziege', 'Overworld', 'Berge, Verschneite Gipfel'),
+      'Wolf', 'Farmwelt', 'Wälder, Taiga, Savanne, Ödland'),
+  MobdexMob.vanilla('Wüstenzombie', 'Farmwelt', 'Wüste'),
+  MobdexMob.vanilla('Ziege', 'Farmwelt', 'Berge, Verschneite Gipfel'),
   MobdexMob.vanilla(
-      'Zoglin', 'Overworld', 'Hoglin in die Overworld bringen'),
-  MobdexMob.vanilla('Zombie', 'Overworld', 'Überall (Dunkelheit)'),
+      'Zoglin', 'Farmwelt', 'Hoglin in die Farmwelt bringen'),
+  MobdexMob.vanilla('Zombie', 'Farmwelt', 'Überall (Dunkelheit)'),
   MobdexMob.vanilla('Zombifizierter Piglin', 'Nether',
       'Nether-Ödland, Basaltdeltas, Karmesinwald'),
 ];
