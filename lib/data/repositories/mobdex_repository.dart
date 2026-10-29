@@ -7,7 +7,6 @@
 //  Gespeichert wird (SharedPreferences, nur auf dem Gerät):
 //    - gefangene Mobs (Liste der Mob-Namen)
 //    - Abschlusszeitpunkt (wann der letzte Mob abgehakt wurde)
-//    - aktuelle Jägerjob-XP (vom Nutzer eingegeben)
 //
 //  COOLDOWN-LOGIK (Entscheidung Mobdex-Update):
 //    1. Sobald der LETZTE Mob abgehakt wird, startet automatisch der
@@ -16,10 +15,15 @@
 //       nichts) – sonst würde ein versehentliches Abwählen den
 //       Cooldown löschen und ein erneutes Anhaken ihn neu starten.
 //       Korrekturen sind über resetAll() möglich.
-//    3. Nach Ablauf werden ALLE Haken automatisch zurückgesetzt
-//       (die XP bleiben erhalten). Das passiert beim Laden, beim
-//       Abhaken und über checkExpiry() (Minuten-Timer im Screen).
-//       Danach steht resetNotice = true, bis der Nutzer es wegklickt.
+//    3. Nach Ablauf werden ALLE Haken automatisch zurückgesetzt.
+//       Das passiert beim Laden, beim Abhaken und über checkExpiry()
+//       (Minuten-Timer im Screen). Danach steht resetNotice = true,
+//       bis der Nutzer es wegklickt.
+//
+//  ÄNDERUNGEN (Mobdex-Überarbeitung):
+//    - XP-Meilenstein komplett entfernt (State-Feld, setHunterXp und
+//      Persistenz). Ein alter gespeicherter XP-Wert wird beim Laden
+//      einmalig gelöscht.
 //
 //  ABLAUF (gleiches Muster wie number_format_repository.dart):
 //    build() liefert synchron einen leeren State (loaded = false),
@@ -41,7 +45,9 @@ import '../mobdex_data.dart';
 // ── Interne Persistenz-Keys in SharedPreferences ──────────────
 const _caughtKey = 'mobdex_caught_v1';
 const _completedKey = 'mobdex_completed_at_v1';
-const _xpKey = 'mobdex_hunter_xp_v1';
+// Alter XP-Key (XP-Feld wurde entfernt) – wird beim Laden einmalig
+// aufgeräumt, damit keine Altdaten auf dem Gerät liegen bleiben.
+const _legacyXpKey = 'mobdex_hunter_xp_v1';
 
 final mobdexProvider = NotifierProvider<MobdexNotifier, MobdexState>(
   MobdexNotifier.new,
@@ -58,9 +64,6 @@ class MobdexState {
   /// null = Mobdex ist (noch) nicht vollständig.
   final DateTime? completedAt;
 
-  /// Vom Nutzer eingetragene aktuelle Jägerjob-XP.
-  final int hunterXp;
-
   /// true, wenn der Mobdex nach Ablauf des Cooldowns gerade automatisch
   /// zurückgesetzt wurde (einmaliger Hinweis, wird nicht gespeichert).
   final bool resetNotice;
@@ -69,7 +72,6 @@ class MobdexState {
     this.loaded = false,
     this.caught = const <String>{},
     this.completedAt,
-    this.hunterXp = 0,
     this.resetNotice = false,
   });
 
@@ -78,14 +80,12 @@ class MobdexState {
     Set<String>? caught,
     DateTime? completedAt,
     bool clearCompletedAt = false,
-    int? hunterXp,
     bool? resetNotice,
   }) {
     return MobdexState(
       loaded: loaded ?? this.loaded,
       caught: caught ?? this.caught,
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
-      hunterXp: hunterXp ?? this.hunterXp,
       resetNotice: resetNotice ?? this.resetNotice,
     );
   }
@@ -113,6 +113,7 @@ class MobdexNotifier extends Notifier<MobdexState> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_legacyXpKey);
 
     // Defensiv: nur Namen übernehmen, die es in der Mob-Liste noch gibt
     // (falls ein Mob später umbenannt/entfernt wird).
@@ -132,7 +133,6 @@ class MobdexNotifier extends Notifier<MobdexState> {
       loaded: true,
       caught: caught,
       completedAt: completedAt,
-      hunterXp: prefs.getInt(_xpKey) ?? 0,
     );
 
     final next = _applyExpiry(loaded);
@@ -184,7 +184,7 @@ class MobdexNotifier extends Notifier<MobdexState> {
     _persist();
   }
 
-  /// Löscht alle Haken UND den Cooldown (XP bleiben erhalten).
+  /// Löscht alle Haken UND den Cooldown.
   void resetAll() {
     if (!state.loaded) return;
     state = state.copyWith(
@@ -199,14 +199,6 @@ class MobdexNotifier extends Notifier<MobdexState> {
   void dismissResetNotice() {
     if (!state.resetNotice) return;
     state = state.copyWith(resetNotice: false);
-  }
-
-  /// Speichert die aktuelle Jägerjob-XP (sofort im State, dann auf Disk).
-  Future<void> setHunterXp(int xp) async {
-    final value = xp < 0 ? 0 : xp;
-    state = state.copyWith(hunterXp: value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_xpKey, value);
   }
 
   Future<void> _persist() async {
