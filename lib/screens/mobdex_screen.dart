@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 //  mobdex_screen.dart – Mobdex-Tracker für den Jägerjob
 //
-//  ✅ HIER ÄNDERN: Kartendesign, Texte, Kachelhöhe (_mobTileHeight)
+//  ✅ HIER ÄNDERN: Zeilendesign, Texte, Abstände (_MobRow)
 //  ❌ NICHT ÄNDERN: mobdexProvider-Aufrufe (Logik liegt in
 //                   mobdex_repository.dart), Mob-Daten (mobdex_data.dart)
 //
@@ -12,7 +12,7 @@
 //    2. Suche
 //    3. Status-Umschalter (Alle / Fehlend / Gefangen) + Welt-Chips
 //       (Farmwelt / Nether / End)
-//    4. Mob-Grid (2 Spalten): Tippen = abhaken, langes Drücken =
+//    4. Mob-Liste (flache Zeilen): Tippen = abhaken, langes Drücken =
 //       Details (alle Biome ausgeschrieben)
 //
 //  Während des Cooldowns sind die Haken gesperrt (siehe Kommentar in
@@ -28,6 +28,16 @@
 //      mehr, niedrigere Kacheln, ruhigere Abstände.
 //    - Status-Filter als Segment-Umschalter statt loser Chips.
 //    - Welt-Filter: "Overworld" entfällt, ist identisch mit "Farmwelt".
+//
+//  ÄNDERUNGEN (Listen-Update):
+//    - Mob-Kacheln (2-Spalten-Grid, 128 px hoch) durch flache Listen-
+//      Zeilen ersetzt (ca. 56 px): Abhak-Symbol, Name, darunter Welt
+//      und Biome in EINER Zeile, rechts ein kleines "CUSTOM"-Label.
+//      Die vollständigen Biome stehen weiterhin im Detail-Sheet.
+//    - 🐛 Cooldown-SnackBar entfernt: Sie verdeckte beim Tippen auf
+//      eine Zeile den unteren Bildschirmbereich. Der Cooldown steht
+//      ohnehin im Kopf, dort jetzt zusätzlich "Haken gesperrt bis …".
+//      Ein Tipp während des Cooldowns bleibt einfach wirkungslos.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async';
@@ -38,9 +48,6 @@ import '../core/app_format.dart';
 import '../data/mobdex_data.dart';
 import '../data/repositories/mobdex_repository.dart';
 import '../widgets/app_background.dart';
-
-/// Höhe einer Mob-Kachel im Grid (Name max. 2 Zeilen, Biome max. 2).
-const double _mobTileHeight = 128;
 
 enum _MobStatus { all, missing, caught }
 
@@ -95,25 +102,10 @@ class _MobdexScreenState extends ConsumerState<MobdexScreen> {
     }).toList();
   }
 
-  void _showSnack(String text) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(text),
-          duration: const Duration(seconds: 2),
-          backgroundColor: AppColors.darkCardElevated,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-  }
-
   void _onTapMob(MobdexMob mob) {
-    final state = ref.read(mobdexProvider);
-    if (state.cooldownActive) {
-      _showSnack('Cooldown aktiv – die Haken sind bis zum Ablauf gesperrt.');
-      return;
-    }
+    // Während des Cooldowns sind die Haken gesperrt – bewusst ohne
+    // SnackBar (die verdeckte das Layout). Der Hinweis steht im Kopf.
+    if (ref.read(mobdexProvider).cooldownActive) return;
     ref.read(mobdexProvider.notifier).toggle(mob.name);
   }
 
@@ -274,7 +266,7 @@ class _MobdexScreenState extends ConsumerState<MobdexScreen> {
           ),
         ),
 
-        // ─── Mob-Grid ────────────────────────────────────────
+        // ─── Mob-Liste (flache Zeilen) ───────────────────────
         if (filtered.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -292,22 +284,19 @@ class _MobdexScreenState extends ConsumerState<MobdexScreen> {
         else
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                mainAxisExtent: _mobTileHeight,
-              ),
+            sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
                   final mob = filtered[i];
                   final caught = state.caught.contains(mob.name);
-                  return _MobTile(
-                    mob: mob,
-                    caught: caught,
-                    onTap: () => _onTapMob(mob),
-                    onLongPress: () => _showDetail(mob, caught),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: _MobRow(
+                      mob: mob,
+                      caught: caught,
+                      onTap: () => _onTapMob(mob),
+                      onLongPress: () => _showDetail(mob, caught),
+                    ),
                   );
                 },
                 childCount: filtered.length,
@@ -466,7 +455,7 @@ class _HeaderCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 24),
               child: Text(
-                'Zurücksetzung: ${AppFormat.dateTime(endsAt)}',
+                'Haken gesperrt bis ${AppFormat.dateTime(endsAt)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.darkTextHint,
                   fontSize: 11,
@@ -595,14 +584,14 @@ class _WorldChip extends StatelessWidget {
   }
 }
 
-// ─── Mob-Kachel (minimalistisch, abhakbar) ────────────────────
+// ─── Mob-Zeile (flach, abhakbar) ──────────────────────────────
 
-class _MobTile extends StatelessWidget {
+class _MobRow extends StatelessWidget {
   final MobdexMob mob;
   final bool caught;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
-  const _MobTile({
+  const _MobRow({
     required this.mob,
     required this.caught,
     required this.onTap,
@@ -615,12 +604,12 @@ class _MobTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: caught
             ? Color.alphaBlend(
-                AppColors.accent.withOpacity(0.10), AppColors.darkCard)
+                AppColors.accent.withOpacity(0.08), AppColors.darkCard)
             : AppColors.darkCard,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: caught
-              ? AppColors.accent.withOpacity(0.40)
+              ? AppColors.accent.withOpacity(0.35)
               : Colors.white.withOpacity(0.05),
         ),
       ),
@@ -631,70 +620,78 @@ class _MobTile extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
               children: [
-                // ─ Name + Abhak-Symbol ──────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
+                _CheckDot(checked: caught),
+                const SizedBox(width: 12),
+
+                // ─ Name + (Welt · Biome) in einer Zeile ────────
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         mob.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          height: 1.25,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _CheckDot(checked: caught),
-                  ],
-                ),
-                const SizedBox(height: 4),
-
-                // ─ Welt (+ Custom) ──────────────────────────
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: mob.world,
-                        style: const TextStyle(
-                          color: AppColors.accentLight,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: mob.world,
+                              style: const TextStyle(
+                                color: AppColors.accentLight,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '  \u00b7  ${mob.biomes}',
+                              style: const TextStyle(
+                                color: AppColors.darkTextSecondary,
+                              ),
+                            ),
+                          ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11.5),
                       ),
-                      if (mob.isCustom)
-                        const TextSpan(
-                          text: '  \u00b7  Custom',
-                          style: TextStyle(color: AppColors.darkTextSecondary),
-                        ),
                     ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11),
                 ),
-                const SizedBox(height: 6),
 
-                // ─ Biome (max. 2 Zeilen, voll im Detail-Sheet) ──
-                Expanded(
-                  child: Text(
-                    mob.biomes,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.darkTextSecondary,
-                      fontSize: 11,
-                      height: 1.3,
+                // ─ Custom-Label (dezent) ────────────────────
+                if (mob.isCustom) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.accent.withOpacity(0.35),
+                      ),
+                    ),
+                    child: const Text(
+                      'CUSTOM',
+                      style: TextStyle(
+                        color: AppColors.accentLight,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -730,7 +727,7 @@ class _CheckDot extends StatelessWidget {
   }
 }
 
-// ─── Detail-Sheet (langes Drücken auf eine Mob-Kachel) ────────
+// ─── Detail-Sheet (langes Drücken auf eine Mob-Zeile) ────────
 
 class _MobDetailSheet extends StatelessWidget {
   final MobdexMob mob;
