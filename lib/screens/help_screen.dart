@@ -22,6 +22,11 @@
 //    - NEU: Karte "Mobdex" an ZWEITER Stelle (direkt unter dem
 //      Wertstoff-Rechner), öffnet den Mobdex-Tracker für den
 //      Jägerjob (AppRoutes.mobdex, siehe mobdex_screen.dart).
+//
+//  ÄNDERUNGEN (Fischerei-Logbuch-Update):
+//    - NEU: Karte "Fischerei-Logbuch" an DRITTER Stelle (direkt unter
+//      dem Mobdex), öffnet das Logbuch für den Fischerjob
+//      (AppRoutes.fishLog, siehe fish_log_screen.dart).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -57,13 +62,23 @@ class HelpScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            // ─── Mobdex (NEU, an zweiter Stelle) ───────────────
+            // ─── Mobdex (an zweiter Stelle) ────────────────────
             _HelpCard(
               icon: Icons.pets_rounded,
               title: 'Mobdex',
               description: 'Jägerjob: Mobs abhaken & Cooldown im Blick.',
               color: AppColors.sectionAuction,
               onTap: () => context.push(AppRoutes.mobdex),
+            ),
+            const SizedBox(height: 12),
+
+            // ─── Fischerei-Logbuch (NEU, direkt unter dem Mobdex) ──
+            _HelpCard(
+              icon: Icons.set_meal_rounded,
+              title: 'Fischerei-Logbuch',
+              description: 'Fischerjob: Fänge abhaken & Seltenheiten im Blick.',
+              color: AppColors.sectionMarket,
+              onTap: () => context.push(AppRoutes.fishLog),
             ),
             const SizedBox(height: 12),
 
