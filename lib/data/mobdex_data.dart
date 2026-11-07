@@ -29,6 +29,14 @@
 //    - Welten bereinigt: "Overworld" und "Farmwelt" sind auf dem Server
 //      dasselbe und wurden zu "Farmwelt" zusammengeführt.
 //    - XP-Meilenstein entfernt (gehört nicht in ein reines Mobdex).
+//
+//  ÄNDERUNGEN (Fischerei-Logbuch-Update):
+//    - 🐛 Korrektur: "Einwanderer (Trader)" war falsch benannt und
+//      heißt jetzt "Eiswanderer" (Stray). Spawn: verschneite Biome
+//      (Verschneite Ebenen, Eisspitzen, jeweils bei Dunkelheit).
+//      ⚠️ Der Name ist der Speicher-Schlüssel: Ein bereits gesetzter
+//      Haken bei "Einwanderer (Trader)" geht dadurch verloren und
+//      muss einmalig beim Eiswanderer neu gesetzt werden.
 // ═══════════════════════════════════════════════════════════════
 
 /// ✅ HIER ÄNDERN: Dauer des Cooldowns nach vollständigem Abschluss.
@@ -129,8 +137,8 @@ const List<MobdexMob> _vanillaMobs = [
   MobdexMob.vanilla('Eisbär', 'Farmwelt',
       'Verschneite Ebenen, Eisspitzen, Gefrorener Ozean'),
   MobdexMob.vanilla('Eisengolem', 'Farmwelt', 'Dörfer, Außenposten'),
-  MobdexMob.vanilla(
-      'Einwanderer (Trader)', 'Farmwelt', 'Spawnt zufällig beim Spieler'),
+  MobdexMob.vanilla('Eiswanderer', 'Farmwelt',
+      'Verschneite Ebenen, Eisspitzen (Nacht / Dunkelheit)'),
   MobdexMob.vanilla('Enderman', 'Farmwelt / Nether / End',
       'Überall, Wirrwald (Warped Forest), Das End'),
   MobdexMob.vanilla('Ertrunkener', 'Farmwelt',
