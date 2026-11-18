@@ -44,6 +44,20 @@
 //    - NEU: marketHistory(material) – Preisverlauf eines Items aus
 //      der OPSUCHT-API. Eine Antwort enthält alle Zeitreihen
 //      (HOURLY, DAILY, WEEKLY, MONTHLY), siehe market_history.dart.
+//
+//  ÄNDERUNGEN (Item-Datenbank-Update):
+//    - NEU: supabaseUrl / supabaseAnonKey / supabaseItemsEndpoint /
+//      supabaseHeaders – Anbindung der Item-Datenbank (BETA, Tabellen
+//      items / categories / collections), siehe
+//      catalog_repository.dart.
+//    - Der "Publishable"-Key (sb_publishable_…) ist von Supabase
+//      ausdrücklich für den Einsatz im Client vorgesehen und darf im
+//      Repo stehen. Den Schutz der Daten übernimmt Row Level Security
+//      in Supabase (für "anon" nur SELECT erlauben!). Niemals einen
+//      "secret"-/service_role-Key hier eintragen.
+//    - Es wird nur der apikey-Header gesendet (kein Authorization:
+//      Bearer) – bei den neuen Publishable-Keys ist das der
+//      vorgesehene Weg, der Key ist kein JWT.
 // ═══════════════════════════════════════════════════════════════
 
 class ApiConstants {
@@ -100,6 +114,23 @@ class ApiConstants {
   /// siehe berlinDateString() im Worker) + Zeitpunkt. Gleiches JSON-
   /// Format wie serverPeak – ServerPeak.fromJson passt für beide.
   static const String serverPeakToday = '$_backendBaseUrl/server/peak/today';
+
+  // ── Item-Datenbank (Supabase, BETA) ────────────────────────
+  // ✅ HIER ÄNDERN: Project URL / Publishable Key, falls sich das
+  // Supabase-Projekt ändert. Nur lesend (GET) – die App schreibt
+  // niemals in die Datenbank.
+  static const String supabaseUrl = 'https://svstoiqsvnsxajajstfo.supabase.co';
+  static const String supabaseAnonKey =
+      'sb_publishable_qwikdmKWjrSr8cXloKWUZA_MIiseRXB';
+
+  /// GET → Items (mit Embed von categories/collections),
+  /// siehe catalog_repository.dart.
+  static const String supabaseItemsEndpoint = '$supabaseUrl/rest/v1/items';
+
+  /// Pflicht-Header für jede Supabase-REST-Anfrage.
+  static const Map<String, String> supabaseHeaders = {
+    'apikey': supabaseAnonKey,
+  };
 
   // ── Live-Serverstatus (mc-api.io) ──────────────────────────
   // ✅ HIER ÄNDERN: Server-Adresse. Bewusst "bc4.opsucht.iwmedia.ovh"
