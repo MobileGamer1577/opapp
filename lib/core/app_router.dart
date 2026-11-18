@@ -51,6 +51,11 @@
 //    - Neue Route AppRoutes.fishLog → FishLogScreen (Fischerei-Logbuch
 //      für den Fischerjob, erreichbar über "Tools & Hilfe", direkt
 //      unter dem Mobdex)
+//
+//  ÄNDERUNGEN (Item-Datenbank-Update):
+//    - Neue Route AppRoutes.itemDatabase → ItemDatabaseScreen
+//      (Item-Datenbank mit BETA-Badge, erreichbar über "Tools & Hilfe",
+//      direkt unter dem Fischerei-Logbuch)
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +77,7 @@ import '../screens/server_info_screen.dart';
 import '../screens/shard_calculator_screen.dart';
 import '../screens/mobdex_screen.dart';
 import '../screens/fish_log_screen.dart';
+import '../screens/item_database_screen.dart';
 // ← Neue Screen-Imports hier hinzufügen
 
 // ── Route-Namen als Konstanten ────────────────────────────────
@@ -92,6 +98,7 @@ abstract class AppRoutes {
   static const calculator = '/calculator';
   static const mobdex = '/mobdex';
   static const fishLog = '/fish-log';
+  static const itemDatabase = '/item-database';
   // ← Neue Route hier ergänzen
 
   /// Pfad zur Markt-Liste, optional mit vorausgewählter Kategorie
@@ -186,6 +193,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.fishLog,
         builder: (_, __) => const FishLogScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.itemDatabase,
+        builder: (_, __) => const ItemDatabaseScreen(),
       ),
       // ← Neue GoRoute hier ergänzen, z.B.:
       // GoRoute(
