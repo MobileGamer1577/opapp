@@ -27,6 +27,15 @@
 //    - NEU: Karte "Fischerei-Logbuch" an DRITTER Stelle (direkt unter
 //      dem Mobdex), öffnet das Logbuch für den Fischerjob
 //      (AppRoutes.fishLog, siehe fish_log_screen.dart).
+//
+//  ÄNDERUNGEN (Item-Datenbank-Update):
+//    - NEU: Karte "Item-Datenbank" an VIERTER Stelle (direkt unter dem
+//      Fischerei-Logbuch), öffnet die Item-Datenbank
+//      (AppRoutes.itemDatabase, siehe item_database_screen.dart).
+//    - NEU: _HelpCard hat den Parameter isBeta. Ist er gesetzt, steht
+//      neben dem Titel das auffällige BETA-Badge (widgets/
+//      beta_badge.dart) – die Datenbank ist noch im Aufbau, Daten
+//      können sich ändern oder wieder entfernt werden.
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -37,6 +46,7 @@ import '../core/app_colors.dart';
 import '../core/api_constants.dart';
 import '../core/app_router.dart';
 import '../widgets/app_background.dart';
+import '../widgets/beta_badge.dart';
 
 class HelpScreen extends ConsumerWidget {
   const HelpScreen({super.key});
@@ -72,13 +82,24 @@ class HelpScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            // ─── Fischerei-Logbuch (NEU, direkt unter dem Mobdex) ──
+            // ─── Fischerei-Logbuch (an dritter Stelle) ─────────
             _HelpCard(
               icon: Icons.set_meal_rounded,
               title: 'Fischerei-Logbuch',
               description: 'Fischerjob: Fänge abhaken & Seltenheiten im Blick.',
               color: AppColors.sectionMarket,
               onTap: () => context.push(AppRoutes.fishLog),
+            ),
+            const SizedBox(height: 12),
+
+            // ─── Item-Datenbank (NEU, BETA, direkt unter dem Logbuch) ──
+            _HelpCard(
+              icon: Icons.inventory_2_rounded,
+              title: 'Item-Datenbank',
+              description: 'Neue Items & Katalog mit Suche und Details.',
+              color: AppColors.sectionHelp,
+              isBeta: true,
+              onTap: () => context.push(AppRoutes.itemDatabase),
             ),
             const SizedBox(height: 12),
 
@@ -228,6 +249,10 @@ class _HelpCard extends StatelessWidget {
   /// (Regelwerk, Website) statt in der App zu navigieren.
   final bool isExternal;
 
+  /// ✅ NEU (Item-Datenbank-Update): zeigt das BETA-Badge neben dem
+  /// Titel, für Features, die noch im Aufbau sind.
+  final bool isBeta;
+
   const _HelpCard({
     required this.icon,
     required this.title,
@@ -235,6 +260,7 @@ class _HelpCard extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.isExternal = false,
+    this.isBeta = false,
   });
 
   @override
@@ -266,6 +292,10 @@ class _HelpCard extends StatelessWidget {
                         Flexible(
                           child: Text(title, style: theme.textTheme.titleMedium),
                         ),
+                        if (isBeta) ...[
+                          const SizedBox(width: 8),
+                          const BetaBadge(),
+                        ],
                         if (isExternal) ...[
                           const SizedBox(width: 6),
                           const Icon(
