@@ -13,6 +13,13 @@
 //      im Web zusätzlich CORS-Blockaden ab (der Browser verweigert
 //      dann den Zugriff auf die Antwort, bevor wir den Statuscode
 //      sehen – kommt als ClientException an, nicht als HTTP-Fehler).
+//
+//  ÄNDERUNGEN (Item-Datenbank-Update):
+//    - NEU: get() akzeptiert optional zusätzliche Header
+//      (headers: {...}). Wird für Supabase gebraucht (apikey-Header,
+//      siehe ApiConstants.supabaseHeaders). Ohne Angabe verhält sich
+//      get() exakt wie bisher – alle bestehenden Aufrufer bleiben
+//      unverändert.
 // ═══════════════════════════════════════════════════════════════
 
 import 'dart:async' as async;
@@ -58,13 +65,16 @@ class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   /// GET-Request → gibt geparste JSON-Daten zurück.
+  /// [headers] werden zu den Standard-Headern hinzugefügt (und
+  /// überschreiben diese bei gleichem Namen).
   /// Wirft [ApiException]-Unterklassen bei Fehlern.
-  Future<dynamic> get(String url) async {
+  Future<dynamic> get(String url, {Map<String, String>? headers}) async {
     try {
       final uri = Uri.parse(url);
       final response = await _client.get(uri, headers: {
         'Accept': 'application/json',
         'User-Agent': 'OPAPP/1.0',
+        ...?headers,
       }).timeout(ApiConstants.receiveTimeout);
 
       if (response.statusCode == 200) {
