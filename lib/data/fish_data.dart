@@ -2,7 +2,8 @@
 //  fish_data.dart – Fisch-Liste für das Fischerei-Logbuch (Fischerjob)
 //
 //  ✅ HIER ÄNDERN: Fische/Biomgruppen ergänzen oder korrigieren,
-//                  Job-XP je Seltenheit (FishRarity.xp)
+//                  Job-XP je Seltenheit (FishRarity.xp),
+//                  Biome je Biomgruppe (kFishBiomesByGroup)
 //  ❌ NICHT ÄNDERN: Klassen FishSpecies / FishRarity / Variablenname
 //                   kFishSpecies. Der Fisch-NAME ist zugleich der
 //                   Speicher-Schlüssel für den Fortschritt
@@ -17,8 +18,9 @@
 //    FishSpecies.legendary('Name', _gruppe),
 //    FishSpecies.spectacular('Name', _gruppe),
 //    FishSpecies.sensation('Name', _gruppe),
-//  Neue Biomgruppe: Konstante unten anlegen UND in kFishBiomeGroups
-//  eintragen (steuert die Filter-Chips im Logbuch-Screen).
+//  Neue Biomgruppe: Konstante unten anlegen, in kFishBiomeGroups
+//  eintragen (steuert die Filter-Auswahl im Logbuch-Screen) UND ihre
+//  Biome in kFishBiomesByGroup ergänzen.
 //
 //  QUELLE: OPSUCHT Wiki – Angler → Fangsystem
 //  (wiki.opsucht.net/opsucht-features/wirtschaft/jobs/angler/fangsystem/)
@@ -33,6 +35,18 @@
 //      gegenüber dem Wiki jeweils um eine Position verschoben (z.B.
 //      "Felsenbarsch" stand unter Flüsse statt Kalte & bergige Biome,
 //      "Äsche" war Häufig statt Episch) – es gilt das Wiki.
+//
+//  ÄNDERUNGEN (Biome-Update):
+//    - NEU: kFishBiomesByGroup – die echten Minecraft-Biome je
+//      Biomgruppe (aus den Wiki-Daten, alphabetisch wie dort). Alle
+//      Fische einer Gruppe teilen sich dieselbe Biom-Liste, sie wird
+//      deshalb einmal pro Gruppe gepflegt statt pro Fisch.
+//    - NEU: FishSpecies.biomes – Getter, der die Biome der Gruppe des
+//      Fisches liefert (leere Liste bei unbekannter Gruppe, kein
+//      Crash). Wird im Detail-Sheet (Langdruck) und in der Suche
+//      verwendet.
+//    - Plotwelt hat keine echten Biome, dort steht stattdessen die
+//      Angabe "Spezielle Plot-Umgebung".
 // ═══════════════════════════════════════════════════════════════
 
 /// Seltenheitsstufen der Custom-Fische (aufsteigend).
@@ -62,7 +76,7 @@ const String _plot = 'Plotwelt';
 const String _swamp = 'Sumpf & Tropen';
 const String _warm = 'Warme & trockene Biome';
 
-/// Biomgruppen in Anzeige-Reihenfolge (Filter-Chips im Screen).
+/// Biomgruppen in Anzeige-Reihenfolge (Auswahl im Logbuch-Screen).
 const List<String> kFishBiomeGroups = [
   _end,
   _rivers,
@@ -74,6 +88,95 @@ const List<String> kFishBiomeGroups = [
   _warm,
 ];
 
+/// ✅ HIER ÄNDERN: Echte Minecraft-Biome je Biomgruppe (Quelle: Wiki).
+/// Der Schlüssel muss exakt einer der Gruppen-Konstanten oben
+/// entsprechen. Wird im Detail-Sheet des Logbuchs angezeigt.
+const Map<String, List<String>> kFishBiomesByGroup = {
+  _end: [
+    'Das End',
+    'Die Leere',
+    'End-Hochland',
+    'End-Kargland',
+    'End-Mittelland',
+    'Kleine Endinseln',
+  ],
+  _rivers: [
+    'Alm',
+    'Birken-Urwald',
+    'Birkenwald',
+    'Blasser Garten',
+    'Blumenwald',
+    'Dunkler Wald',
+    'Ebene',
+    'Fluss',
+    'Kirschberghain',
+    'Sonnenblumenebene',
+    'Wald',
+  ],
+  _cold: [
+    'Berghain',
+    'Eiszapfentundra',
+    'Fichten-Urtaiga',
+    'Kiefern-Urtaiga',
+    'Taiga',
+    'Tiefes Dunkel',
+    'Tropfsteinhöhlen',
+    'Vereiste Gipfel',
+    'Vereister Fluss',
+    'Verschneite Ebene',
+    'Verschneite Hänge',
+    'Verschneite Taiga',
+    'Zerrüttete Gipfel',
+    'Zerzauste Geröllhügel',
+    'Zerzauste Hügel',
+    'Zerzauster Wald',
+  ],
+  _seas: [
+    'Kalte Tiefsee',
+    'Kalter Ozean',
+    'Lauwarme Tiefsee',
+    'Lauwarmer Ozean',
+    'Ozean',
+    'Steinige Küste',
+    'Strand',
+    'Tiefsee',
+    'Vereiste Tiefsee',
+    'Vereister Ozean',
+    'Verschneiter Strand',
+    'Warmer Ozean',
+  ],
+  _nether: [
+    'Basaltdeltas',
+    'Karmesinwald',
+    'Nether-Ödland',
+    'Seelensandtal',
+    'Wirrwald',
+  ],
+  // Plotwelt hat keine echten Biome – stattdessen die Umgebungs-Angabe.
+  _plot: [
+    'Plotwelt',
+  ],
+  _swamp: [
+    'Bambusdschungel',
+    'Dschungel',
+    'Lichter Dschungel',
+    'Mangrovensumpf',
+    'Sumpf',
+    'Üppige Höhlen',
+  ],
+  _warm: [
+    'Abgetragene Tafelberge',
+    'Bewaldete Tafelberge',
+    'Pilzland',
+    'Savanne',
+    'Savannenhochebene',
+    'Steinige Gipfel',
+    'Tafelberge',
+    'Wüste',
+    'Zerzauste Savanne',
+  ],
+};
+
 /// Ein Custom-Fisch im Fischerei-Logbuch.
 class FishSpecies {
   final String name;
@@ -84,14 +187,18 @@ class FishSpecies {
 
   const FishSpecies.common(this.name, this.biomeGroup)
       : rarity = FishRarity.common;
-  const FishSpecies.epic(this.name, this.biomeGroup)
-      : rarity = FishRarity.epic;
+  const FishSpecies.epic(this.name, this.biomeGroup) : rarity = FishRarity.epic;
   const FishSpecies.legendary(this.name, this.biomeGroup)
       : rarity = FishRarity.legendary;
   const FishSpecies.spectacular(this.name, this.biomeGroup)
       : rarity = FishRarity.spectacular;
   const FishSpecies.sensation(this.name, this.biomeGroup)
       : rarity = FishRarity.sensation;
+
+  /// Echte Biome, in denen dieser Fisch gefangen werden kann (alle
+  /// Biome der Biomgruppe, siehe kFishBiomesByGroup). Leer, falls für
+  /// die Gruppe nichts hinterlegt ist.
+  List<String> get biomes => kFishBiomesByGroup[biomeGroup] ?? const [];
 }
 
 /// Alle 104 Custom-Fische, sortiert nach Biomgruppe, dann Seltenheit.
