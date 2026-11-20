@@ -6,27 +6,42 @@
 //  ❌ NICHT ÄNDERN: fishLogProvider-Aufrufe (Logik liegt in
 //                   fish_repository.dart), Fisch-Daten (fish_data.dart)
 //
-//  AUFBAU (von oben nach unten, bewusst identisch zum Mobdex):
+//  AUFBAU (von oben nach unten, bewusst ähnlich zum Mobdex):
 //    1. Kompakter Kopf: "X / Y" + Prozent + schlanker Balken
-//    2. Suche (Fisch, Biomgruppe oder Seltenheit)
+//    2. Suche (Fisch, Biomgruppe, Biom oder Seltenheit)
 //    3. Status-Umschalter (Alle / Fehlend / Gefangen)
-//       + Biomgruppen-Chips (End, Flüsse, … – 8 Gruppen)
-//       + Seltenheits-Chips (Häufig … Sensation)
+//       + zwei Filter-Buttons nebeneinander (Biomgruppe / Seltenheit),
+//       die ein Auswahl-Sheet öffnen
 //    4. Fisch-Liste (flache Zeilen): Tippen = abhaken, langes Drücken =
-//       Details (Biomgruppe, Seltenheit, Job-XP je Fang)
+//       Details (Biomgruppe, echte Biome, Seltenheit, Job-XP je Fang)
 //
 //  Kein Cooldown (anders als der Mobdex) – siehe fish_repository.dart.
 //  Über das Symbol in der AppBar lässt sich der Fortschritt komplett
 //  zurücksetzen.
 //
 //  ÄNDERUNGEN (Fischerei-Logbuch-Update):
-//    - NEU: Datei. Die kleinen Hilfs-Widgets (_SegmentBar, _FilterChip,
-//      _CheckDot, _Tag, _DetailLine) sind bewusst als private Kopien
-//      aus mobdex_screen.dart übernommen, damit der Mobdex unangetastet
+//    - NEU: Datei. Die kleinen Hilfs-Widgets (_SegmentBar, _CheckDot,
+//      _Tag, _DetailLine) sind bewusst als private Kopien aus
+//      mobdex_screen.dart übernommen, damit der Mobdex unangetastet
 //      bleibt.
 //    - Seltenheits-Farben nutzen ausschließlich vorhandene AppColors
 //      (Häufig = silver, Episch = accentLight, Legendär = sectionAuction,
 //      Spektakulär = sectionHelp, Sensation = gold).
+//
+//  ÄNDERUNGEN (Filter- & Biome-Update):
+//    - Die beiden horizontal wischbaren Chip-Leisten ("Alle Biome" /
+//      "Alle Seltenheiten") sind entfernt. Stattdessen zwei nebenei-
+//      nander liegende Filter-Buttons (_FilterButton), die ein
+//      Bottom-Sheet mit der Auswahl öffnen (gleiches Muster wie das
+//      Sortier-Sheet im Markt). Kein horizontales Scrollen mehr; ein
+//      aktiver Filter ist am hervorgehobenen Button erkennbar.
+//    - NEU: "Filter zurücksetzen" rechts neben dem Ergebnis-Zähler,
+//      sobald Biomgruppe oder Seltenheit eingeschränkt ist.
+//    - NEU: Das Detail-Sheet (Langdruck) zeigt zusätzlich die echten
+//      Biome der Biomgruppe (FishSpecies.biomes, siehe fish_data.dart).
+//    - NEU: Die Suche findet auch über die Biome (z.B. "Wüste" zeigt
+//      die Fische der Gruppe "Warme & trockene Biome").
+//    - _FilterChip entfällt (wird nicht mehr gebraucht).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -75,6 +90,8 @@ class _FishLogScreenState extends ConsumerState<FishLogScreen> {
     super.dispose();
   }
 
+  bool get _hasActiveFilter => _biome != null || _rarity != null;
+
   List<FishSpecies> _filtered(FishLogState state) {
     final q = _query.trim().toLowerCase();
     return kFishSpecies.where((f) {
@@ -86,7 +103,8 @@ class _FishLogScreenState extends ConsumerState<FishLogScreen> {
       if (q.isNotEmpty) {
         final hit = f.name.toLowerCase().contains(q) ||
             f.biomeGroup.toLowerCase().contains(q) ||
-            f.rarity.label.toLowerCase().contains(q);
+            f.rarity.label.toLowerCase().contains(q) ||
+            f.biomes.any((b) => b.toLowerCase().contains(q));
         if (!hit) return false;
       }
       return true;
@@ -106,6 +124,54 @@ class _FishLogScreenState extends ConsumerState<FishLogScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _FishDetailSheet(fish: fish, caught: caught),
+    );
+  }
+
+  /// Auswahl-Sheet für die Biomgruppe.
+  void _openBiomeSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _OptionSheet<String>(
+        title: 'Biomgruppe',
+        selected: _biome,
+        allLabel: 'Alle Biomgruppen',
+        options: [
+          for (final g in kFishBiomeGroups)
+            _SheetOption<String>(value: g, label: g),
+        ],
+        onSelect: (v) => setState(() => _biome = v),
+      ),
+    );
+  }
+
+  /// Auswahl-Sheet für die Seltenheit.
+  void _openRaritySheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _OptionSheet<FishRarity>(
+        title: 'Seltenheit',
+        selected: _rarity,
+        allLabel: 'Alle Seltenheiten',
+        options: [
+          for (final r in FishRarity.values)
+            _SheetOption<FishRarity>(
+              value: r,
+              label: r.label,
+              color: _rarityColor(r),
+            ),
+        ],
+        onSelect: (v) => setState(() => _rarity = v),
+      ),
     );
   }
 
@@ -187,7 +253,7 @@ class _FishLogScreenState extends ConsumerState<FishLogScreen> {
                   controller: _searchCtrl,
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Fisch, Biomgruppe oder Seltenheit \u2026',
+                    hintText: 'Fisch, Biom oder Seltenheit \u2026',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _query.isNotEmpty
                         ? IconButton(
@@ -215,63 +281,64 @@ class _FishLogScreenState extends ConsumerState<FishLogScreen> {
                 ),
                 const SizedBox(height: 10),
 
-                // Biomgruppen-Filter
-                SizedBox(
-                  height: 32,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _FilterChip(
-                        label: 'Alle Biome',
-                        selected: _biome == null,
-                        onTap: () => setState(() => _biome = null),
+                // Filter-Buttons: Biomgruppe + Seltenheit nebeneinander
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FilterButton(
+                        icon: Icons.terrain_rounded,
+                        label: 'Biomgruppe',
+                        value: _biome ?? 'Alle',
+                        active: _biome != null,
+                        onTap: _openBiomeSheet,
                       ),
-                      for (final g in kFishBiomeGroups) ...[
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: g,
-                          selected: _biome == g,
-                          onTap: () =>
-                              setState(() => _biome = _biome == g ? null : g),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _FilterButton(
+                        icon: Icons.star_rounded,
+                        label: 'Seltenheit',
+                        value: _rarity?.label ?? 'Alle',
+                        active: _rarity != null,
+                        color: _rarity == null ? null : _rarityColor(_rarity!),
+                        onTap: _openRaritySheet,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
-                // Seltenheits-Filter
-                SizedBox(
-                  height: 32,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _FilterChip(
-                        label: 'Alle Seltenheiten',
-                        selected: _rarity == null,
-                        onTap: () => setState(() => _rarity = null),
+                // Ergebnis-Zähler + "Filter zurücksetzen"
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${filtered.length} Fisch${filtered.length == 1 ? '' : 'e'}'
+                        ' \u00b7 Tippen = abhaken \u00b7 Lang drücken = Details',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: AppColors.darkTextHint),
                       ),
-                      for (final r in FishRarity.values) ...[
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: r.label,
-                          selected: _rarity == r,
-                          color: _rarityColor(r),
-                          onTap: () =>
-                              setState(() => _rarity = _rarity == r ? null : r),
+                    ),
+                    if (_hasActiveFilter)
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _biome = null;
+                          _rarity = null;
+                        }),
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                      ],
-                    ],
-                  ),
+                        child: const Text(
+                          'Filter zurücksetzen',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  '${filtered.length} Fisch${filtered.length == 1 ? '' : 'e'}'
-                  ' \u00b7 Tippen = abhaken \u00b7 Lang drücken = Details',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: AppColors.darkTextHint),
-                ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
               ],
             ),
           ),
@@ -487,18 +554,22 @@ class _SegmentBar extends StatelessWidget {
   }
 }
 
-// ─── Filter-Chip (klein, zurückhaltend) ───────────────────────
-// [color] = optionale Akzentfarbe im gewählten Zustand (Seltenheiten);
-// ohne Angabe gilt der normale Akzent (wie _WorldChip im Mobdex).
+// ─── Filter-Button (öffnet ein Auswahl-Sheet) ─────────────────
+// Zeigt oben das Filter-Label, darunter die aktuelle Auswahl.
+// [active] = Filter ist eingeschränkt → Button hervorgehoben.
+// [color] = optionale Akzentfarbe im aktiven Zustand (Seltenheit).
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
+class _FilterButton extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  final bool active;
   final Color? color;
   final VoidCallback onTap;
-  const _FilterChip({
+  const _FilterButton({
+    required this.icon,
     required this.label,
-    required this.selected,
+    required this.value,
+    required this.active,
     required this.onTap,
     this.color,
   });
@@ -506,32 +577,181 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = color ?? AppColors.accent;
-    final textColor = selected
+    final textColor = active
         ? (color ?? AppColors.accentLight)
-        : AppColors.darkTextSecondary;
+        : AppColors.darkTextPrimary;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? accent.withOpacity(0.18) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? accent.withOpacity(0.50)
-                : Colors.white.withOpacity(0.10),
+    return Container(
+      decoration: BoxDecoration(
+        color: active ? accent.withOpacity(0.14) : AppColors.darkCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: active ? accent.withOpacity(0.50) : Colors.white.withOpacity(0.06),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: active ? accent : AppColors.darkTextSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: AppColors.darkTextHint,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 20,
+                  color: AppColors.darkTextSecondary,
+                ),
+              ],
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+      ),
+    );
+  }
+}
+
+// ─── Auswahl-Sheet (Biomgruppe / Seltenheit) ──────────────────
+// Generisch: "Alle …" (= kein Filter, value null) + die Optionen.
+// Tippen wählt aus und schließt das Sheet. Ein Tipp auf die bereits
+// gewählte Option hebt den Filter wieder auf.
+
+class _SheetOption<T> {
+  final T value;
+  final String label;
+  final Color? color; // optionaler Farbpunkt (Seltenheiten)
+  const _SheetOption({required this.value, required this.label, this.color});
+}
+
+class _OptionSheet<T> extends StatelessWidget {
+  final String title;
+  final String allLabel;
+  final T? selected;
+  final List<_SheetOption<T>> options;
+  final ValueChanged<T?> onSelect;
+  const _OptionSheet({
+    required this.title,
+    required this.allLabel,
+    required this.selected,
+    required this.options,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Widget row({
+      required String label,
+      required bool isSelected,
+      required VoidCallback onTap,
+      Color? dot,
+    }) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () {
+          onTap();
+          Navigator.of(context).pop();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          child: Row(
+            children: [
+              if (dot != null) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isSelected
+                        ? AppColors.accentLight
+                        : AppColors.darkTextPrimary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                const Icon(Icons.check_rounded,
+                    color: AppColors.accent, size: 22),
+            ],
           ),
+        ),
+      );
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag-Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(title, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 6),
+            row(
+              label: allLabel,
+              isSelected: selected == null,
+              onTap: () => onSelect(null),
+            ),
+            for (final o in options)
+              row(
+                label: o.label,
+                dot: o.color,
+                isSelected: selected == o.value,
+                // Erneuter Tipp auf die aktive Option hebt den Filter auf.
+                onTap: () => onSelect(selected == o.value ? null : o.value),
+              ),
+          ],
         ),
       ),
     );
@@ -668,6 +888,10 @@ class _CheckDot extends StatelessWidget {
 }
 
 // ─── Detail-Sheet (langes Drücken auf eine Fisch-Zeile) ──────
+// Zeigt Biomgruppe, die echten Biome der Gruppe (analog zum Mobdex
+// "Spawn-Biome") und die Job-XP je Fang. Scrollbar als Sicherheit für
+// kleine Displays, falls viele Biome (z.B. "Kalte & bergige Biome")
+// mehrere Zeilen brauchen.
 
 class _FishDetailSheet extends StatelessWidget {
   final FishSpecies fish;
@@ -678,9 +902,10 @@ class _FishDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final statusColor = caught ? AppColors.success : AppColors.darkTextSecondary;
+    final biomes = fish.biomes;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -716,10 +941,18 @@ class _FishDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             _DetailLine(
-              icon: Icons.terrain_rounded,
+              icon: Icons.public_rounded,
               label: 'Biomgruppe',
               value: fish.biomeGroup,
             ),
+            if (biomes.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _DetailLine(
+                icon: Icons.terrain_rounded,
+                label: 'Biome',
+                value: biomes.join(', '),
+              ),
+            ],
             const SizedBox(height: 14),
             _DetailLine(
               icon: Icons.star_rounded,
