@@ -2,7 +2,8 @@
 //  item_database_screen.dart – Item-Datenbank (BETA)
 //
 //  ✅ HIER ÄNDERN: Zeilendesign (_ItemTile), Detail-Sheet-Inhalt,
-//                  Texte, Bildhöhe (_loreImageMaxHeight)
+//                  Texte, Bildhöhe (_loreImageMaxHeight),
+//                  Sheet-Höhe (_sheetHeightFactor)
 //  ❌ NICHT ÄNDERN: catalogItemsProvider-Aufruf (Logik liegt in
 //                   catalog_repository.dart)
 //
@@ -29,6 +30,18 @@
 //    - Preise laufen über AppFormat.currencyAuto() und beachten damit
 //      die Einstellung "Zahlenformat". Fehlt der Preis (null), steht
 //      "Kein Preis vorhanden" da.
+//
+//  ÄNDERUNGEN (Detail-Sheet-Höhen-Update):
+//    - Das Detail-Sheet öffnet jetzt fast in voller Höhe
+//      (DraggableScrollableSheet, _sheetHeightFactor = 0.95, mit
+//      isScrollControlled + useSafeArea), damit "Hinzugefügt am" und
+//      "Preis" ohne Scrollen sichtbar sind. Vorher war die Höhe an den
+//      Inhalt gekoppelt und bei 85 % der Bildschirmhöhe gedeckelt.
+//    - Lore-Bild-Maximalhöhe von 320 auf 240 reduziert, damit auch auf
+//      kleineren Handys alle Zeilen in die Sheet-Höhe passen. Der
+//      Inhalt bleibt als Sicherheit trotzdem scrollbar (z.B. bei sehr
+//      vielen Verzauberungen).
+//    - Das Sheet lässt sich nach unten wegziehen (schließt dann).
 // ═══════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
@@ -42,7 +55,11 @@ import '../widgets/app_background.dart';
 import '../widgets/beta_badge.dart';
 
 /// Maximale Höhe des Lore-Bildes im Detail-Sheet.
-const double _loreImageMaxHeight = 320;
+const double _loreImageMaxHeight = 240;
+
+/// ✅ HIER ÄNDERN: Anteil der Bildschirmhöhe, den das Detail-Sheet
+/// beim Öffnen einnimmt (und maximal einnehmen darf).
+const double _sheetHeightFactor = 0.95;
 
 /// Lädt die Datenbank neu (Pull-to-Refresh). Fehler werden hier nur
 /// geschluckt, damit der Indikator nicht hängen bleibt – der Fehler
@@ -437,22 +454,43 @@ class _ItemTile extends StatelessWidget {
 }
 
 // ─── Detail-Sheet ─────────────────────────────────────────────
+// DraggableScrollableSheet mit festem Höhenanteil: öffnet bei
+// _sheetHeightFactor (0.95), kann nicht höher gezogen werden und
+// schließt sich, wenn man es unter minChildSize wegzieht.
 
 void _showItemSheet(BuildContext context, CatalogItem item) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => _ItemDetailSheet(item: item),
+    builder: (_) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: _sheetHeightFactor,
+      maxChildSize: _sheetHeightFactor,
+      minChildSize: 0.5,
+      builder: (context, scrollController) => _ItemDetailSheet(
+        item: item,
+        scrollController: scrollController,
+      ),
+    ),
   );
 }
 
 class _ItemDetailSheet extends ConsumerWidget {
   final CatalogItem item;
-  const _ItemDetailSheet({required this.item});
+
+  /// Controller des DraggableScrollableSheet – muss an das
+  /// scrollbare Widget übergeben werden, sonst funktioniert das
+  /// Wegziehen/Scrollen des Sheets nicht.
+  final ScrollController scrollController;
+  const _ItemDetailSheet({
+    required this.item,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -464,92 +502,96 @@ class _ItemDetailSheet extends ConsumerWidget {
         ? 'Kein Preis vorhanden'
         : AppFormat.currencyAuto(price.toDouble(), mode: formatMode);
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+    return SingleChildScrollView(
+      controller: scrollController,
+      // Immer scrollbar, damit das Sheet auch bei kurzem Inhalt per
+      // Wischen nach unten geschlossen werden kann.
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        32 + MediaQuery.of(context).padding.bottom,
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag-Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag-Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 18),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
+          ),
 
-            // ─ Titel ────────────────────────────────────────
-            Text(item.name, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 16),
+          // ─ Titel ────────────────────────────────────────
+          Text(item.name, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 16),
 
-            // ─ Lore-Bild ────────────────────────────────────
-            _LoreImage(url: item.loreImageUrl),
-            const SizedBox(height: 22),
+          // ─ Lore-Bild ────────────────────────────────────
+          _LoreImage(url: item.loreImageUrl),
+          const SizedBox(height: 22),
 
-            // ─ Verzauberungen ───────────────────────────────
-            Text('Verzauberungen', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (item.enchantments.isEmpty)
-              Text(
-                'Keine Verzauberungen',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.darkTextHint),
-              )
-            else
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: item.enchantments
-                    .map((e) => _EnchantChip(label: e))
-                    .toList(),
-              ),
-            const SizedBox(height: 22),
+          // ─ Verzauberungen ───────────────────────────────
+          Text('Verzauberungen', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (item.enchantments.isEmpty)
+            Text(
+              'Keine Verzauberungen',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: AppColors.darkTextHint),
+            )
+          else
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: item.enchantments
+                  .map((e) => _EnchantChip(label: e))
+                  .toList(),
+            ),
+          const SizedBox(height: 22),
 
-            // ─ Stammdaten ───────────────────────────────────
-            _DetailRow(
-              icon: Icons.tag_rounded,
-              label: 'Minecraft Item-ID',
-              value: item.minecraftId.isEmpty ? 'Unbekannt' : item.minecraftId,
-            ),
-            const SizedBox(height: 14),
-            _DetailRow(
-              icon: Icons.category_outlined,
-              label: 'Kategorie',
-              value: item.categoryName ?? 'Unbekannt',
-            ),
-            const SizedBox(height: 14),
-            _DetailRow(
-              icon: Icons.collections_bookmark_outlined,
-              label: 'Kollektion',
-              value: item.collectionName ?? 'Keine',
-            ),
-            const SizedBox(height: 14),
-            _DetailRow(
-              icon: Icons.event_available_outlined,
-              label: 'Hinzugefügt am',
-              value: item.createdAt != null
-                  ? AppFormat.dateTime(item.createdAt!)
-                  : 'Unbekannt',
-            ),
-            const SizedBox(height: 14),
-            _DetailRow(
-              icon: Icons.sell_outlined,
-              label: 'Preis',
-              value: priceText,
-              valueColor:
-                  price == null ? AppColors.darkTextHint : AppColors.gold,
-            ),
-          ],
-        ),
+          // ─ Stammdaten ───────────────────────────────────
+          _DetailRow(
+            icon: Icons.tag_rounded,
+            label: 'Minecraft Item-ID',
+            value: item.minecraftId.isEmpty ? 'Unbekannt' : item.minecraftId,
+          ),
+          const SizedBox(height: 14),
+          _DetailRow(
+            icon: Icons.category_outlined,
+            label: 'Kategorie',
+            value: item.categoryName ?? 'Unbekannt',
+          ),
+          const SizedBox(height: 14),
+          _DetailRow(
+            icon: Icons.collections_bookmark_outlined,
+            label: 'Kollektion',
+            value: item.collectionName ?? 'Keine',
+          ),
+          const SizedBox(height: 14),
+          _DetailRow(
+            icon: Icons.event_available_outlined,
+            label: 'Hinzugefügt am',
+            value: item.createdAt != null
+                ? AppFormat.dateTime(item.createdAt!)
+                : 'Unbekannt',
+          ),
+          const SizedBox(height: 14),
+          _DetailRow(
+            icon: Icons.sell_outlined,
+            label: 'Preis',
+            value: priceText,
+            valueColor:
+                price == null ? AppColors.darkTextHint : AppColors.gold,
+          ),
+        ],
       ),
     );
   }
